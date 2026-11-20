@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cora-documents"
+version = "0.1.0"
+description = "Local document extraction for property management"
+readme = "README.md"
+requires-python = ">=3.10"
+license-files = ["THIRD_PARTY_NOTICES.md"]
+dependencies = [
+    "pdf-inspector==0.2.7",
+    "pypdf>=6.14.2,<7",
+    "python-docx>=1.2,<2",
+    "openpyxl>=3.1,<4",
+]
+
+[project.scripts]
+cora-documents = "cora_documents.__main__:main"

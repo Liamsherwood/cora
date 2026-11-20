@@ -1,5 +1,11 @@
 # Cora
 
+## Document processing
+
+Use the local Python package and CLI to extract text and labeled fields from
+invoices, leases, and other property-management documents. See the
+[document processing guide](tools/document_processing/README.md).
+
 ## Local development
 
 Install Git and Node.js 24, and make sure you have access to the Cora repository.
