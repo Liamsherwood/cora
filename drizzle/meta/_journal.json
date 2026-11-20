@@ -15,6 +15,13 @@
       "when": 1795196539090,
       "tag": "0001_enable_row_level_security",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795201719324,
+      "tag": "0002_whatsapp_chat_state",
+      "breakpoints": true
     }
   ]
 }

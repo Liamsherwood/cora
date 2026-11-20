@@ -60,6 +60,43 @@ testing, add fictional records to your local database in Supabase Studio.
 
 To stop the local Supabase services, run `npx --yes supabase@2.114.0 stop`.
 
+## WhatsApp agent
+
+Cora replies to inbound text about property management and keeps up to four
+recent exchanges per conversation for context. Replies use Vercel AI Gateway.
+The pilot handles conversation only. Case creation and staff handoff remain
+manual.
+
+1. Open your Meta app and go to **WhatsApp → API Setup** (or **Use cases →
+   Customize → API Setup**). Select the sender number and copy its **Phone Number
+   ID** into `WHATSAPP_PHONE_NUMBER_ID`. Use a temporary **Access token** in
+   `WHATSAPP_ACCESS_TOKEN` for a quick test, or use a system user access token
+   with `whatsapp_business_messaging` and access to the WhatsApp account for an
+   ongoing deployment. For a Meta test number, add your phone as a test
+   recipient. If you only verified ownership of your own business number, check
+   its [Cloud API registration](https://developers.facebook.com/documentation/business-messaging/whatsapp/business-phone-numbers/registration).
+   [Meta Cloud API setup](https://developers.facebook.com/documentation/business-messaging/whatsapp/get-started)
+2. Copy the **App secret** from **App settings → Basic** into
+   `WHATSAPP_APP_SECRET`. Generate a separate verification token with
+   `openssl rand -hex 32` and save it as `WHATSAPP_VERIFY_TOKEN`. Put these
+   values in the gitignored `.env.local` for local use or in Vercel’s
+   server-side environment variables for the deployment that will receive the
+   callback.
+3. Run `npm run db:migrate` against the intended database before running or
+   deploying the agent. Use the hosted migration command below for hosted
+   Supabase. AI Gateway uses Vercel OIDC on a linked deployment. For local
+   development, use a current OIDC token or supply `AI_GATEWAY_API_KEY`.
+   [AI Gateway authentication](https://vercel.com/docs/ai-gateway/authentication)
+4. In Meta, open **WhatsApp → Configuration** (or **Use cases → Customize →
+   Configuration**). Set the callback URL to
+   `https://<public-cora-host>/api/webhooks/whatsapp`. The URL must be reachable
+   by Meta over HTTPS without a login. Enter the same `WHATSAPP_VERIFY_TOKEN`,
+   click **Verify and save**, and subscribe to the `messages` field.
+   [Meta webhook setup](https://developers.facebook.com/documentation/business-messaging/whatsapp/webhooks/create-webhook-endpoint)
+5. From your own WhatsApp account, send the business number a text such as
+   “My kitchen tap is leaking.” Cora should reply with a follow-up question.
+   Reply with another detail to test conversation context.
+
 ## Database
 
 Cora uses PostgreSQL and Drizzle for typed SQL and versioned migrations. The
