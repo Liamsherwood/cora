@@ -16,7 +16,12 @@ import {
 
 export const properties = pgTable("properties", {
   id: uuid("id").defaultRandom().primaryKey(),
+  /** Display string, e.g. "Musterstraße 12, 52062 Aachen". */
   address: text("address").notNull(),
+  // Structured parts, needed for partner eligibility (postcode prefixes) and order payloads.
+  street: text("street"),
+  postcode: text("postcode"),
+  city: text("city"),
   isWeg: boolean("is_weg").notNull(),
 }).enableRLS()
 

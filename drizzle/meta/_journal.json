@@ -15,6 +15,20 @@
       "when": 1795196539090,
       "tag": "0001_enable_row_level_security",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795202122547,
+      "tag": "0002_partner_connect",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1795202134230,
+      "tag": "0003_rename_lead_time_business_days",
+      "breakpoints": true
     }
   ]
 }
