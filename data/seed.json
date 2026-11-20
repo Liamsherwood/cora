@@ -1,0 +1,182 @@
+{
+  "_comment": "Demo data for Musterstraße 12, Aachen. Fixed UUIDs: the prefix says the kind (1 property, 2 building, 3 unit, 4 party, 5 lease, 6 mandate, 7 asset, 8 meter), the tail mirrors the old ids (unit 4B -> ...4b, party c_202 -> ...0202).",
+  "properties": [
+    {
+      "id": "10000000-0000-4000-8000-000000000012",
+      "address": "Musterstraße 12, 52062 Aachen",
+      "street": "Musterstraße 12",
+      "postcode": "52062",
+      "city": "Aachen",
+      "is_weg": true
+    }
+  ],
+  "buildings": [
+    {
+      "id": "20000000-0000-4000-8000-000000000012",
+      "property_id": "10000000-0000-4000-8000-000000000012",
+      "building_year": 1972,
+      "heating_type": "gas central heating",
+      "energy_class": "E"
+    }
+  ],
+  "units": [
+    {
+      "id": "30000000-0000-4000-8000-00000000004b",
+      "building_id": "20000000-0000-4000-8000-000000000012",
+      "property_id": "10000000-0000-4000-8000-000000000012",
+      "identifier": "4B",
+      "floor": 2,
+      "size_sqm": 68,
+      "rooms": 3
+    },
+    {
+      "id": "30000000-0000-4000-8000-00000000002a",
+      "building_id": "20000000-0000-4000-8000-000000000012",
+      "property_id": "10000000-0000-4000-8000-000000000012",
+      "identifier": "2A",
+      "floor": 1,
+      "size_sqm": 54,
+      "rooms": 2
+    },
+    {
+      "id": "30000000-0000-4000-8000-00000000005c",
+      "building_id": "20000000-0000-4000-8000-000000000012",
+      "property_id": "10000000-0000-4000-8000-000000000012",
+      "identifier": "5C",
+      "floor": 3,
+      "size_sqm": 82,
+      "rooms": 4
+    }
+  ],
+  "parties": [
+    {
+      "id": "40000000-0000-4000-8000-000000000100",
+      "type": "organization",
+      "name": "WEG Musterstraße 12",
+      "email": null,
+      "phone": null,
+      "whatsapp_opt_in": false,
+      "language": "de"
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000101",
+      "type": "person",
+      "name": "Maria Becker",
+      "email": "maria.becker@example.com",
+      "phone": "+49 151 00000101",
+      "whatsapp_opt_in": false,
+      "language": "de"
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000202",
+      "type": "person",
+      "name": "Lena Hoffmann",
+      "email": "lena@example.com",
+      "phone": "+49 151 00000000",
+      "whatsapp_opt_in": true,
+      "language": "de"
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000203",
+      "type": "person",
+      "name": "Jonas Weber",
+      "email": "jonas.weber@example.com",
+      "phone": "+49 151 00000203",
+      "whatsapp_opt_in": true,
+      "language": "en"
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000301",
+      "type": "organization",
+      "name": "Heizung Schmitz GmbH",
+      "email": "auftrag@heizung-schmitz.example",
+      "phone": "+49 241 0000301",
+      "whatsapp_opt_in": false,
+      "language": "de"
+    }
+  ],
+  "ownerships": [
+    {
+      "party_id": "40000000-0000-4000-8000-000000000101",
+      "unit_id": "30000000-0000-4000-8000-00000000004b",
+      "mea_share": "68.5",
+      "valid_from": "2015-06-01",
+      "valid_to": null
+    },
+    {
+      "party_id": "40000000-0000-4000-8000-000000000101",
+      "unit_id": "30000000-0000-4000-8000-00000000002a",
+      "mea_share": "54.2",
+      "valid_from": "2015-06-01",
+      "valid_to": null
+    }
+  ],
+  "leases": [
+    {
+      "id": "50000000-0000-4000-8000-00000000004b",
+      "unit_id": "30000000-0000-4000-8000-00000000004b",
+      "rent_cold_eur": "780.00",
+      "start_date": "2026-12-01",
+      "end_date": null
+    },
+    {
+      "id": "50000000-0000-4000-8000-00000000002a",
+      "unit_id": "30000000-0000-4000-8000-00000000002a",
+      "rent_cold_eur": "610.00",
+      "start_date": "2023-03-01",
+      "end_date": null
+    }
+  ],
+  "lease_parties": [
+    {
+      "lease_id": "50000000-0000-4000-8000-00000000004b",
+      "party_id": "40000000-0000-4000-8000-000000000202",
+      "role": "tenant"
+    },
+    {
+      "lease_id": "50000000-0000-4000-8000-00000000002a",
+      "party_id": "40000000-0000-4000-8000-000000000203",
+      "role": "tenant"
+    }
+  ],
+  "mandates": [
+    {
+      "id": "60000000-0000-4000-8000-000000000001",
+      "property_id": "10000000-0000-4000-8000-000000000012",
+      "party_id": "40000000-0000-4000-8000-000000000100",
+      "type": "weg",
+      "approval_limit_eur": "500.00"
+    },
+    {
+      "id": "60000000-0000-4000-8000-000000000002",
+      "property_id": "10000000-0000-4000-8000-000000000012",
+      "party_id": "40000000-0000-4000-8000-000000000101",
+      "type": "rental",
+      "approval_limit_eur": "300.00"
+    }
+  ],
+  "assets": [
+    {
+      "id": "70000000-0000-4000-8000-000000000001",
+      "building_id": "20000000-0000-4000-8000-000000000012",
+      "property_id": "10000000-0000-4000-8000-000000000012",
+      "unit_id": null,
+      "asset_type": "gas central boiler",
+      "ownership_scope": "common"
+    }
+  ],
+  "meters": [
+    {
+      "id": "80000000-0000-4000-8000-00000000004b",
+      "unit_id": "30000000-0000-4000-8000-00000000004b",
+      "type": "electricity",
+      "number": "1ESY1160123456"
+    },
+    {
+      "id": "80000000-0000-4000-8000-00000000002a",
+      "unit_id": "30000000-0000-4000-8000-00000000002a",
+      "type": "electricity",
+      "number": "1ESY1160654321"
+    }
+  ]
+}
