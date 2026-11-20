@@ -1,5 +1,5 @@
 {
-  "_comment": "Demo data. (1) Musterstraße 12, Aachen: the hand-made demo case. Fixed UUIDs: the prefix says the kind (1 property, 2 building, 3 unit, 4 party, 5 lease, 6 mandate, 7 asset, 8 meter), the tail mirrors the old ids (unit 4B -> ...4b, party c_202 -> ...0202). (2) A generated NRW portfolio of a Düsseldorf property manager: 24 properties (15 rental houses, 9 WEGs) in Düsseldorf, Köln, Neuss, Duisburg, Krefeld, Essen, Mönchengladbach, Ratingen, Hilden, Leverkusen and Meerbusch, with owners, tenants, lease history, mandates, fittings and meters. Its UUIDs are stable hashes. All people, companies and numbers are made up; the streets are real. Phone numbers are unassignable on purpose (Bundesnetzagentur numbers for media productions, or a 0 right after the area code), so a live demo call or message can never reach a real person. The one exception is the demo tenant Lena Hoffmann, whose number is real so the live demo call rings a phone; e-mails use reserved example domains.",
+  "_comment": "Demo data. (1) Musterstraße 12, Aachen: the hand-made demo case. Fixed UUIDs: the prefix says the kind (1 property, 2 building, 3 unit, 4 party, 5 lease, 6 mandate, 7 asset, 8 meter), the tail mirrors the old ids (unit 4B -> ...4b, party c_202 -> ...0202). (2) A generated NRW portfolio of a Düsseldorf property manager: 24 properties (15 rental houses, 9 WEGs) in Düsseldorf, Köln, Neuss, Duisburg, Krefeld, Essen, Mönchengladbach, Ratingen, Hilden, Leverkusen and Meerbusch, with owners, tenants, lease history, mandates, fittings and meters. Its UUIDs are stable hashes. All people, companies and numbers are made up; the streets are real. Phone numbers are unassignable on purpose (Bundesnetzagentur numbers for media productions, or a 0 right after the area code), so a live demo call or message can never reach a real person. The exceptions are three demo tenants with a move-in on 1 Dec 2026, whose numbers are real so a live demo call rings a phone: Lena Hoffmann (Aachen 4B), Benedikt Theisen and Jürgen Zimmermann (Ackerstraße 81, Düsseldorf); e-mails use reserved example domains.",
   "properties": [
     {
       "id": "10000000-0000-4000-8000-000000000012",
@@ -6106,8 +6106,8 @@
       "type": "person",
       "name": "Jürgen Zimmermann",
       "email": "juergen.zimmermann@example.net",
-      "phone": "+49 211 04952619",
-      "whatsapp_opt_in": false,
+      "phone": "+39 328 4977076",
+      "whatsapp_opt_in": true,
       "language": "de"
     },
     {
@@ -6286,7 +6286,7 @@
       "type": "person",
       "name": "Benedikt Theisen",
       "email": "benedikt.theisen@example.net",
-      "phone": "+49 211 02295749",
+      "phone": "+31 6 41633959",
       "whatsapp_opt_in": true,
       "language": "de"
     },
