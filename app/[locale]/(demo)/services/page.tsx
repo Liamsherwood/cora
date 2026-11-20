@@ -6,7 +6,7 @@ import {
   contactTenantAction,
   fireMoveInAction,
   resetDemoAction,
-} from "@/app/(demo)/actions"
+} from "@/app/[locale]/(demo)/actions"
 import { ActionButton } from "@/components/partner-connect/action-button"
 import { AutoRefresh } from "@/components/partner-connect/auto-refresh"
 import { day, eur, eurDecimal, time } from "@/components/partner-connect/format"
@@ -33,12 +33,16 @@ const CONTRACT_BADGE: Record<string, string> = {
   cancelled: "rejected",
 }
 
-/** The property manager's view: units, the moment detected on a unit, and its workflows. */
-export default async function CentrixPage({
+/**
+ * Services: the property manager's view of partner services on each unit – the moment
+ * centrix detected, the partner workflows it started and the contracts written back.
+ */
+export default async function ServicesPage({
   searchParams,
-}: PageProps<"/centrix">) {
+  params,
+}: PageProps<"/[locale]/services">) {
   await connection()
-  const sp = await searchParams
+  const [{ locale }, sp] = await Promise.all([params, searchParams])
   const unitId =
     typeof sp.unit === "string" && isUuid(sp.unit) ? sp.unit : DEMO_UNIT_ID
   const db = getDb()
@@ -55,7 +59,7 @@ export default async function CentrixPage({
     runs.find((r) => r.id === sp.run)?.id ?? runs[0]?.id ?? null
   const view = selectedRun ? await getRunView(db, selectedRun) : null
   const href = (q: { unit?: string; run?: string }) =>
-    `/centrix?${new URLSearchParams({ unit: unitId, ...q })}`
+    `/${locale}/services?${new URLSearchParams({ unit: unitId, ...q })}`
 
   return (
     <div className="grid gap-4 lg:grid-cols-[220px_1fr]">
@@ -183,7 +187,7 @@ export default async function CentrixPage({
             ))}
           </div>
         )}
-        {view && <RunPanel view={view} />}
+        {view && <RunPanel view={view} locale={locale} />}
       </div>
     </div>
   )
@@ -230,8 +234,10 @@ function Info({ k, v }: { k: string; v: string }) {
 
 function RunPanel({
   view: v,
+  locale,
 }: {
   view: Awaited<ReturnType<typeof getRunView>>
+  locale: string
 }) {
   const o = v.offer
   return (
@@ -296,7 +302,7 @@ function RunPanel({
               <p className="text-sm">
                 <Link
                   className="underline underline-offset-4"
-                  href={`/portal/${v.tenant.id}`}
+                  href={`/${locale}/portal/${v.tenant.id}`}
                 >
                   Open {v.tenant.name}&apos;s portal →
                 </Link>

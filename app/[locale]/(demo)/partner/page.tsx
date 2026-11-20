@@ -1,6 +1,6 @@
 import { connection } from "next/server"
 
-import { partnerStatusAction } from "@/app/(demo)/actions"
+import { partnerStatusAction } from "@/app/[locale]/(demo)/actions"
 import { ActionButton } from "@/components/partner-connect/action-button"
 import { AutoRefresh } from "@/components/partner-connect/auto-refresh"
 import { day, time } from "@/components/partner-connect/format"

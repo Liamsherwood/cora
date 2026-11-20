@@ -5,7 +5,7 @@ import {
   acceptOfferAction,
   declineOfferAction,
   revokeConsentAction,
-} from "@/app/(demo)/actions"
+} from "@/app/[locale]/(demo)/actions"
 import { ActionButton } from "@/components/partner-connect/action-button"
 import { AutoRefresh } from "@/components/partner-connect/auto-refresh"
 import { day, eur, time } from "@/components/partner-connect/format"
@@ -42,7 +42,7 @@ type RunView = Awaited<ReturnType<typeof getRunView>>
 /** The tenant portal. No auth yet (demo): production would use a signed link per tenant. */
 export default async function PortalPage({
   params,
-}: PageProps<"/portal/[partyId]">) {
+}: PageProps<"/[locale]/portal/[partyId]">) {
   await connection()
   const { partyId } = await params
   const db = getDb()
