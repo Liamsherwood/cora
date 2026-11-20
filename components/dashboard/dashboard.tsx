@@ -6,6 +6,7 @@ import {
   RefreshIcon,
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
+import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
 
 import { Button } from "@/components/ui/button"
@@ -41,7 +42,7 @@ type Overlay =
 type RequestFilter = "active" | "attention" | "resolved"
 
 export function Dashboard({ rentHistory }: { rentHistory: RentPeriod[] }) {
-  const { messages, format } = useDashboardLocale()
+  const { locale, messages, format } = useDashboardLocale()
   const [view, setView] = useState<View>("overview")
   const [month, setMonth] = useState(rentHistory.length - 1)
   const [overlay, setOverlay] = useState<Overlay | null>(null)
@@ -257,6 +258,14 @@ export function Dashboard({ rentHistory }: { rentHistory: RentPeriod[] }) {
             {announcement}
           </p>
         </main>
+        <footer className="mx-auto max-w-[1460px] px-4 pb-6 text-sm text-muted-foreground sm:px-8">
+          <Link
+            href={`/${locale}/privacy`}
+            className="underline-offset-4 hover:text-foreground hover:underline"
+          >
+            {messages.privacyPolicy}
+          </Link>
+        </footer>
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

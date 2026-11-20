@@ -4,7 +4,57 @@ const en = {
     description:
       "Manage properties, rent collection, and maintenance in one workspace.",
   },
+  privacy: {
+    title: "Privacy policy",
+    intro: "This notice explains how the CORA demo handles personal data on this website and in its WhatsApp assistant. Please use fictional details when testing the demo.",
+    contact: {
+      title: "Who is responsible for your data",
+      description: "CORA operates this demo and is responsible for its processing of personal data. For privacy questions, access or deletion requests, email",
+    },
+    sections: {
+      website: {
+        title: "Website and browser storage",
+        paragraphs: [
+          "Vercel hosts the website and processes technical request information such as IP address, browser information, requested page and request time to deliver the site and diagnose errors. Where enabled, Vercel Speed Insights receives page URLs, device and browser information, and measurements such as loading times to help identify performance problems.",
+          "The dashboard saves changes you make to demo maintenance requests and your appearance preference in your browser. Clearing site data removes these saved settings and changes from that browser.",
+        ],
+      },
+      whatsapp: {
+        title: "WhatsApp messages and AI replies",
+        paragraphs: [
+          "When you message CORA, Meta’s WhatsApp Cloud API passes us information such as your phone number or WhatsApp identifier, available display name, message text, message ID and time. CORA uses this information to route the conversation and reply. Sharing a message is voluntary and is needed for a reply. Please keep payment details, passwords, identity documents and information about real tenants out of the chat.",
+          "For AI replies, CORA sends your message and recent conversation text through Vercel AI Gateway to the configured model provider. The default model is from OpenAI. The assistant provides automated demo replies. Decisions about a tenancy, payments or actual maintenance work are outside the assistant’s role.",
+          "Supabase hosts the database that stores conversation context and message processing information. The assistant can reuse up to four recent exchanges for 24 hours after the context was last updated. Message deduplication uses a seven-day expiration window. Expired records may remain in the database or in backups until removed under the applicable cleanup or backup settings.",
+        ],
+      },
+      demo: {
+        title: "Partner Connect demo",
+        paragraphs: [
+          "Partner Connect uses demo property and tenant records and stores interactions such as offer decisions and simulated orders in the demo database. Where the optional voice feature is enabled and used, ElevenLabs and its telephony provider Twilio may receive the destination phone number, voice interaction and the offer details needed for the call.",
+          "Demo workflow records can be cleared through the demo reset. Technical logs and provider records are kept according to the relevant service’s retention settings. If you contact us about privacy, we retain your correspondence as needed to handle the request and meet applicable obligations.",
+        ],
+      },
+      legalBasis: {
+        title: "Why we process the data",
+        paragraphs: [
+          "For the purposes described above, CORA relies on its legitimate interests under Article 6(1)(f) GDPR in providing and securing the prototype, diagnosing performance and delivery problems, demonstrating the workflows you choose to try, and replying to messages you choose to send. Where we have a legal obligation to process information, Article 6(1)(c) GDPR applies.",
+          "Service providers may process information outside the European Economic Area, including in the United States. Vercel’s and Supabase’s published data processing terms provide for EU standard contractual clauses where applicable. Contact us for details of a particular transfer, the applicable safeguards or a copy of those safeguards.",
+        ],
+      },
+      rights: {
+        title: "Your privacy rights",
+        paragraphs: [
+          "Depending on the circumstances, you can request access, correction, deletion, restriction of processing or a portable copy of your data. You may object on grounds relating to your particular situation where we rely on legitimate interests. You can also complain to a competent data protection authority. Use the email above to exercise your rights with CORA.",
+        ],
+      },
+    },
+    whatsappLink: "WhatsApp privacy notice",
+    vercelLink: "Vercel data processing terms",
+    supabaseLink: "Supabase data processing terms",
+    authorityLink: "Find a data protection authority",
+  },
   dashboard: {
+    privacyPolicy: "Privacy policy",
     nav: {
       overview: "Overview",
       properties: "Properties",
