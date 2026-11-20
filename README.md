@@ -100,6 +100,14 @@ Runs against `TEST_DATABASE_URL`. Every run drops and re-migrates that
 database's schema, so its name must end in `_test`; the setup refuses anything
 else and creates the database if it is missing.
 
+### Dashboard languages
+
+Cora serves English at `/en` and German at `/de`. The locale registry and
+translation catalogs live in `lib/i18n`. To add a language, register its URL
+segment, display name, and formatting locale in `locales.ts`, then add its
+catalog and loader. Run `npm run test:i18n` to check translation keys and
+placeholders.
+
 ## WhatsApp agent
 
 Cora replies to inbound text about property management and keeps up to four
@@ -133,9 +141,10 @@ manual.
    by Meta over HTTPS without a login. Enter the same `WHATSAPP_VERIFY_TOKEN`,
    click **Verify and save**, and subscribe to the `messages` field.
    [Meta webhook setup](https://developers.facebook.com/documentation/business-messaging/whatsapp/webhooks/create-webhook-endpoint)
-5. From your own WhatsApp account, send the business number a text such as
-   “My kitchen tap is leaking.” Cora should reply with a follow-up question.
-   Reply with another detail to test conversation context.
+5. From your own WhatsApp account, send the business number `Test!`. Cora sends
+   back `Received: Test!` through Meta's API without calling AI Gateway. To test
+   the assistant, send “My kitchen tap is leaking.” Cora should reply with a
+   follow-up question. Reply with another detail to test conversation context.
 
 ## Database
 
@@ -192,16 +201,16 @@ reached by a voice agent or the portal, consents in one step, the partner gets a
 pre-filled order, and the contract lands on the unit. A second partner
 (electricity) plugs into the same event through a manifest only.
 
-Click path (after `npm run db:seed` and `npm run dev`):
+Click path (after `npm run db:seed` and `npm run dev`; `/de/…` works too, the demo text is English):
 
-1. **/centrix**: unit 4B → *Fire event: tenant.move_in* (two workflows appear)
+1. **/en/services** (*Services* in the dashboard sidebar): unit 4B → *Fire event: tenant.move_in* (two workflows appear)
 2. *Call tenant (voice agent)* (simulated without ElevenLabs keys) or *Approve &
    send to portal*
 3. **Tenant portal (Lena)** → *Agree & order* (shows exactly what is shared)
-4. **/partner** → *Accept order* → *Mark as live* (signed webhooks)
-5. Back in **/centrix**: contract on the unit, timeline, cost per case
+4. **/en/partner** → *Accept order* → *Mark as live* (signed webhooks)
+5. Back in **/en/services**: contract on the unit, timeline, cost per case
 
-*Reset demo data* in the centrix sidebar (`DEMO_MODE=true`) clears the
+*Reset demo data* on the Services page (`DEMO_MODE=true`) clears the
 workflows, consents and orders on the seed units and restores the seed rows.
 Other data is left alone.
 
@@ -216,7 +225,7 @@ the server every few seconds while it is visible.
 | `lib/centrix/`    | mock centrix API over the portfolio tables                        |
 | `lib/partner/`    | webhook signing (one secret per partner), feed, demo simulator    |
 | `lib/voice/`      | ElevenLabs outbound call and context                              |
-| `app/api/`        | HTTP routes; `app/(demo)/` the three demo screens                 |
+| `app/api/`        | HTTP routes; `app/[locale]/(demo)/` the three demo screens        |
 | `data/`           | `seed.json` (fixed UUIDs) and one manifest per partner            |
 
 Data model notes: a confirmed `service_orders` row *is* the contract on the unit
@@ -235,21 +244,3 @@ Demo environment variables are listed in [`.env.example`](.env.example).
 `DATABASE_POOL_MAX` sets the connection pool (default 5; use 1 behind a
 transaction pooler). Not built on purpose: route auth (production would use
 partner API keys, signed portal links and a property-manager key).
-
-## Adding components
-
-To add components to your app, run the following command:
-
-```bash
-npx shadcn@latest add button
-```
-
-This will place the ui components in the `components` directory.
-
-## Using components
-
-To use the components in your app, import them as follows:
-
-```tsx
-import { Button } from "@/components/ui/button";
-```

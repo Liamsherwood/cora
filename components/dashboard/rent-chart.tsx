@@ -1,0 +1,141 @@
+import { cn } from "@/lib/utils"
+
+import { formatMessage, useDashboardLocale } from "./locale"
+import type { RentPeriod } from "./rent-history"
+
+const axis = [150000, 100000, 50000, 0]
+
+export function RentChart({
+  month,
+  rentHistory,
+}: {
+  month: number
+  rentHistory: RentPeriod[]
+}) {
+  const { messages, format } = useDashboardLocale()
+  const history = rentHistory.slice(month - 5, month + 1)
+
+  return (
+    <figure className="rounded-2xl border border-border bg-card p-5 shadow-panel sm:p-6">
+      <figcaption className="mb-6 flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
+        <div>
+          <h2 className="text-base font-medium tracking-tight">
+            {messages.nav.rent}
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {messages.chartDescription}
+          </p>
+        </div>
+        <div className="flex gap-4 text-xs text-muted-foreground sm:pt-1">
+          <span className="flex items-center gap-1.5">
+            <span className="size-2.5 rounded-[2px] bg-chart-collected" />
+            {messages.collected}
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="h-0.5 w-3 rounded-full bg-chart-target" />
+            {messages.expected}
+          </span>
+        </div>
+      </figcaption>
+      <div className="grid h-44 grid-cols-[max-content_minmax(0,1fr)] gap-3 sm:h-48">
+        <div
+          className="flex flex-col justify-between text-xs leading-none whitespace-nowrap text-muted-foreground tabular-nums"
+          aria-hidden="true"
+        >
+          {axis.map((amount) => (
+            <span key={amount}>
+              {amount
+                ? formatMessage(messages.chartThousands, {
+                    amount: format.number(amount / 1000),
+                  })
+                : format.currency(0)}
+            </span>
+          ))}
+        </div>
+        <div className="relative min-w-0">
+          <div
+            aria-hidden="true"
+            className="absolute inset-x-0 inset-y-1.5 flex flex-col justify-between"
+          >
+            {axis.map((amount) => (
+              <span key={amount} className="h-px bg-chart-grid" />
+            ))}
+          </div>
+          <ul className="absolute inset-x-0 inset-y-1.5 grid grid-cols-6 sm:gap-2">
+            {history.map(
+              (
+                { month, shortMonth, longMonthYear, collected, expected },
+                index
+              ) => {
+                const collectedAmount = format.currency(collected)
+                const expectedAmount = format.currency(expected)
+                const current = index === history.length - 1
+                return (
+                  <li key={month} className="relative flex justify-center">
+                    <div
+                      tabIndex={0}
+                      aria-label={formatMessage(messages.chartBar, {
+                        month: longMonthYear,
+                        collected: collectedAmount,
+                        expected: expectedAmount,
+                      })}
+                      role="img"
+                      className="group absolute inset-0 rounded-md"
+                    >
+                      <div
+                        aria-hidden="true"
+                        className="absolute bottom-0 left-1/2 w-3/5 max-w-12 -translate-x-1/2 rounded-t-[4px] bg-chart-collected"
+                        style={{ height: `${(collected / axis[0]) * 100}%` }}
+                      />
+                      <div
+                        aria-hidden="true"
+                        className="absolute left-1/2 h-0.5 w-4/5 max-w-15 -translate-x-1/2 translate-y-1/2 rounded-full bg-chart-target"
+                        style={{ bottom: `${(expected / axis[0]) * 100}%` }}
+                      />
+                      <div
+                        aria-hidden="true"
+                        className={cn(
+                          "pointer-events-none absolute z-10 hidden w-max rounded-lg border border-border bg-popover px-3 py-2 text-xs shadow-float group-hover:block group-focus:block",
+                          index < 2
+                            ? "left-0"
+                            : index > 3
+                              ? "right-0"
+                              : "left-1/2 -translate-x-1/2"
+                        )}
+                        style={{
+                          bottom: `calc(${(Math.max(collected, expected) / axis[0]) * 100}% + 8px)`,
+                        }}
+                      >
+                        <p className="font-medium">
+                          {formatMessage(messages.chartCollected, {
+                            amount: collectedAmount,
+                          })}
+                        </p>
+                        <p className="mt-0.5 text-muted-foreground">
+                          {formatMessage(messages.chartExpected, {
+                            amount: expectedAmount,
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                    <span
+                      aria-hidden="true"
+                      className={cn(
+                        "absolute top-full mt-2.5 rounded-md px-1.5 py-0.5 text-xs text-muted-foreground",
+                        current &&
+                          "bg-accent font-medium text-accent-foreground"
+                      )}
+                    >
+                      {shortMonth}
+                    </span>
+                  </li>
+                )
+              }
+            )}
+          </ul>
+        </div>
+      </div>
+      <div className="h-7" />
+    </figure>
+  )
+}

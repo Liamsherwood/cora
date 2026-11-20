@@ -62,17 +62,26 @@ function createBot() {
   })
 
   bot.onDirectMessage(async (thread, message, _channel, context) => {
-    const text = [...(context?.skipped ?? []), message]
-      .filter((entry) => {
-        const raw = entry.raw as WhatsAppRawMessage | null
-        return (
-          raw?.phoneNumberId === process.env.WHATSAPP_PHONE_NUMBER_ID &&
-          raw?.message.type === "text"
-        )
-      })
-      .map((entry) => entry.text.trim())
-      .filter(Boolean)
-      .join("\n")
+    const textParts: string[] = []
+    for (const entry of [...(context?.skipped ?? []), message]) {
+      const raw = entry.raw as WhatsAppRawMessage | null
+      if (
+        raw?.phoneNumberId !== process.env.WHATSAPP_PHONE_NUMBER_ID ||
+        raw?.message.type !== "text"
+      ) {
+        continue
+      }
+
+      if (entry.text === "Test!") {
+        await thread.post({ raw: "Received: Test!" })
+        continue
+      }
+
+      const text = entry.text.trim()
+      if (text) textParts.push(text)
+    }
+
+    const text = textParts.join("\n")
     if (!text) return
 
     const conversationKey = `cora:whatsapp:conversation:${thread.id}`
