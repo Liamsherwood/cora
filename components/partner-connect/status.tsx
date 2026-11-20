@@ -13,10 +13,17 @@ const TONE: Record<string, string> = {
   rejected: "bg-destructive/15 text-destructive",
 }
 
-export function StateBadge({ state }: { state: string }) {
+/** A workflow state as a coloured badge. `label` overrides the text (the tone stays the state's). */
+export function StateBadge({
+  state,
+  label,
+}: {
+  state: string
+  label?: string
+}) {
   return (
     <Badge variant="secondary" className={cn(TONE[state])}>
-      {state.replace(/_/g, " ")}
+      {(label ?? state).replace(/_/g, " ")}
     </Badge>
   )
 }

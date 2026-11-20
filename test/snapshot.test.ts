@@ -37,6 +37,23 @@ describe("unit snapshot", () => {
     expect(s.owner?.contact_id).toBe(WEG)
   })
 
+  it("reports the current owner, not one whose ownership starts later", async () => {
+    // Sale agreed: Maria owns 2A until year end, the WEG from 1 Jan 2027.
+    await db
+      .update(t.ownerships)
+      .set({ validTo: "2026-12-31" })
+      .where(
+        and(eq(t.ownerships.unitId, UNIT_2A), eq(t.ownerships.partyId, MARIA))
+      )
+    await db.insert(t.ownerships).values({
+      unitId: UNIT_2A,
+      partyId: WEG,
+      validFrom: "2027-01-01",
+    })
+    const s = await getUnitSnapshot(db, UNIT_2A)
+    expect(s.owner?.contact_id).toBe(MARIA)
+  })
+
   it("has no tenant once the last lease has ended, but keeps the lease history", async () => {
     expect((await getUnitSnapshot(db, UNIT_2A)).tenant?.contact_id).toBe(JONAS)
     await db

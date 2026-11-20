@@ -1,13 +1,14 @@
 import { demoOnly, handle } from "@/lib/api"
-import { readSeedFile, seedDatabase, wipeDatabase } from "@/lib/seed"
+import { resetDemoData } from "@/lib/seed"
 
-/** DEMO ONLY: wipe every table and load the seed again. */
+/**
+ * DEMO ONLY: clears the demo's workflows on the seed units and restores the seed rows.
+ * No table is truncated and no other data is touched.
+ */
 export async function POST() {
   return handle(async (db) => {
     demoOnly()
-    const data = await readSeedFile()
-    await wipeDatabase(db)
-    await seedDatabase(db, data)
+    await resetDemoData(db)
     return { ok: true }
   })
 }
