@@ -81,25 +81,34 @@ export default function CentrixPage() {
         <h1 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
           Units
         </h1>
-        {units.data?.map((u) => (
-          <button
-            key={u.id}
-            type="button"
-            onClick={() => {
-              setUnitId(u.id)
-              setRunId(null)
-            }}
-            className={cn(
-              "block w-full border px-3 py-2 text-left text-sm",
-              u.id === unitId
-                ? "border-primary bg-background"
-                : "bg-background/60 hover:bg-background"
-            )}
-          >
-            <span className="font-medium">{u.identifier}</span>{" "}
-            <span className="text-muted-foreground">· {u.street}</span>
-          </button>
-        ))}
+        <nav className="max-h-[70vh] space-y-3 overflow-y-auto pr-1">
+          {groupByProperty(units.data ?? []).map((g) => (
+            <section key={g.propertyId} className="space-y-1">
+              <h2 className="sticky top-0 bg-muted/90 py-1 text-xs font-medium text-muted-foreground backdrop-blur">
+                {g.street}
+                {g.city && ` · ${g.city}`}
+              </h2>
+              {g.units.map((u) => (
+                <button
+                  key={u.id}
+                  type="button"
+                  onClick={() => {
+                    setUnitId(u.id)
+                    setRunId(null)
+                  }}
+                  className={cn(
+                    "block w-full border px-3 py-2 text-left text-sm font-medium",
+                    u.id === unitId
+                      ? "border-primary bg-background"
+                      : "bg-background/60 hover:bg-background"
+                  )}
+                >
+                  {u.identifier}
+                </button>
+              ))}
+            </section>
+          ))}
+        </nav>
         <div className="pt-4">
           <Button
             variant="ghost"
@@ -207,6 +216,34 @@ export default function CentrixPage() {
         {selectedRun && <RunPanel key={selectedRun} runId={selectedRun} />}
       </div>
     </div>
+  )
+}
+
+/** Units grouped by property, the demo unit's property first, then by address. */
+function groupByProperty(units: UnitRow[]) {
+  const groups = new Map<
+    string,
+    {
+      propertyId: string
+      street: string
+      city: string | null
+      units: UnitRow[]
+    }
+  >()
+  for (const u of units) {
+    const g = groups.get(u.property_id) ?? {
+      propertyId: u.property_id,
+      street: u.street,
+      city: u.city,
+      units: [],
+    }
+    g.units.push(u)
+    groups.set(u.property_id, g)
+  }
+  const isDemo = (g: { units: UnitRow[] }) =>
+    g.units.some((u) => u.id === DEMO_UNIT_ID)
+  return [...groups.values()].sort(
+    (a, b) => Number(isDemo(b)) - Number(isDemo(a))
   )
 }
 

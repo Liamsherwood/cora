@@ -19,6 +19,7 @@ export type UnitResponse = Jsonified<{
 export type UnitRow = {
   id: string
   identifier: string
+  property_id: string
   street: string
   city: string | null
 }
