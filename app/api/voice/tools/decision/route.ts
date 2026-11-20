@@ -1,9 +1,8 @@
-import { timingSafeEqual } from "node:crypto"
-
 import { z } from "zod"
 
 import { handle, parseBody } from "@/lib/api"
 import { AppError } from "@/lib/errors"
+import { requireToolSecret } from "@/lib/voice/auth"
 import {
   acceptOffer,
   declineOffer,
@@ -21,22 +20,13 @@ const Body = z
   })
   .strict()
 
-function secretOk(given: string | null): boolean {
-  const expected = process.env.VOICE_TOOL_SECRET
-  if (!expected || !given) return false
-  const a = Buffer.from(given)
-  const b = Buffer.from(expected)
-  return a.length === b.length && timingSafeEqual(a, b)
-}
-
 /**
  * ElevenLabs server tool. The agent calls this when the tenant decides on the phone.
  * Configure in ElevenLabs: POST <APP_BASE_URL>/api/voice/tools/decision, header x-tool-secret.
  */
 export async function POST(req: Request) {
   return handle(async (db) => {
-    if (!secretOk(req.headers.get("x-tool-secret")))
-      throw new AppError("invalid tool secret", 401, "unauthorized")
+    requireToolSecret(req)
     const b = await parseBody(req, Body)
     if (!(await voiceThreadMatches(db, b.workflow_id, b.conversation_id))) {
       throw new AppError(

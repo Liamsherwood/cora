@@ -18,9 +18,13 @@ import {
 export function VoiceWidget({
   agentId,
   dynamicVariables,
+  firstMessage,
+  language,
 }: {
   agentId: string
   dynamicVariables: Record<string, string>
+  firstMessage?: string
+  language?: string
 }) {
   useEffect(() => {
     if (document.querySelector("script[data-elevenlabs-widget]")) return
@@ -43,6 +47,8 @@ export function VoiceWidget({
         <elevenlabs-convai
           agent-id={agentId}
           dynamic-variables={JSON.stringify(dynamicVariables)}
+          override-first-message={firstMessage}
+          override-language={language}
         ></elevenlabs-convai>
       </CardContent>
     </Card>

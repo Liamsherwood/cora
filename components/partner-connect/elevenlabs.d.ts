@@ -10,6 +10,8 @@ declare module "react" {
       > & {
         "agent-id"?: string
         "dynamic-variables"?: string
+        "override-first-message"?: string
+        "override-language"?: string
       }
     }
   }

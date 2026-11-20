@@ -23,6 +23,7 @@ import { getParty } from "@/lib/centrix/repository"
 import { getDb } from "@/lib/db"
 import { cn } from "@/lib/utils"
 import { buildDynamicVariables } from "@/lib/voice/elevenlabs"
+import { moveInGreeting } from "@/lib/voice/greetings"
 import { getRunView, listRuns } from "@/lib/workflow/engine"
 
 const FIELD_LABELS: Record<string, string> = {
@@ -87,7 +88,16 @@ export default async function PortalPage({
         v.offer ? <OfferCard key={v.run.id} view={v} /> : null
       )}
       {agentId && voiceContext && (
-        <VoiceWidget agentId={agentId} dynamicVariables={voiceContext} />
+        <VoiceWidget
+          agentId={agentId}
+          dynamicVariables={voiceContext}
+          language={voiceContext.tenant_language === "de" ? "de" : "en"}
+          firstMessage={moveInGreeting(
+            voiceContext.tenant_language,
+            voiceContext.tenant_first_name,
+            voiceContext.move_in_date
+          )}
+        />
       )}
     </div>
   )
