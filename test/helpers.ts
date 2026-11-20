@@ -1,8 +1,11 @@
+import { is, sql } from "drizzle-orm"
+import { getTableConfig, PgTable } from "drizzle-orm/pg-core"
 import { expect } from "vitest"
 
 import { connect, type DB } from "@/lib/db"
+import * as schema from "@/lib/db/schema"
 import { AppError } from "@/lib/errors"
-import { readSeedFile, seedDatabase, wipeDatabase } from "@/lib/seed"
+import { readSeedFile, seedDatabase } from "@/lib/seed"
 
 // Pin the business clock to the reltix example: event on Fri 20 Nov 2026.
 process.env.DEMO_NOW = "2026-11-20T09:14:00Z"
@@ -20,9 +23,20 @@ export function testDb(): DB {
   return db
 }
 
+/**
+ * Empties every application table between tests. Test database only (global-setup
+ * refuses any database whose name doesn't end in _test); the app never truncates.
+ */
+async function truncateAll(d: DB) {
+  const names = (Object.values(schema) as unknown[])
+    .filter((v): v is PgTable => is(v, PgTable))
+    .map((v) => `"${getTableConfig(v).name}"`)
+  await d.execute(sql.raw(`TRUNCATE ${names.join(", ")} CASCADE`))
+}
+
 export async function resetDb(): Promise<DB> {
   const d = testDb()
-  await wipeDatabase(d)
+  await truncateAll(d)
   await seedDatabase(d, await readSeedFile())
   return d
 }

@@ -30,7 +30,8 @@ export default async function setup() {
   const client = postgres(url, { max: 1, onnotice: () => {} })
   try {
     await client.unsafe(
-      "DROP SCHEMA IF EXISTS drizzle CASCADE; DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;"
+      // Every schema the migrations create (cora_chat: WhatsApp state, 0002).
+      "DROP SCHEMA IF EXISTS drizzle CASCADE; DROP SCHEMA IF EXISTS cora_chat CASCADE; DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;"
     )
     await migrate(drizzle(client), {
       migrationsFolder: path.resolve(import.meta.dirname, "../drizzle"),

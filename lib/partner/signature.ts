@@ -8,12 +8,26 @@ import { createHmac, timingSafeEqual } from "node:crypto"
 export const SIGNATURE_HEADER = "x-centrix-signature"
 const TOLERANCE_SECONDS = 300
 
-export function partnerSecret(partnerId: string): string {
-  // Per-partner secret if configured (PARTNER_SECRET_EXAMPLE_FIBRE), else the shared demo secret.
-  const specific = process.env[`PARTNER_SECRET_${partnerId.toUpperCase()}`]
-  const secret = specific || process.env.PARTNER_WEBHOOK_SECRET
-  if (!secret) throw new Error("PARTNER_WEBHOOK_SECRET is not configured")
-  return secret
+/**
+ * The webhook secret of one partner (by manifest id). Every partner has its own secret,
+ * so a partner can never produce a valid signature for another partner's webhook:
+ *
+ * - PARTNER_SECRET_<SLUG> (e.g. PARTNER_SECRET_EXAMPLE_FIBRE) if set, else
+ * - derived from the master key PARTNER_WEBHOOK_SECRET as
+ *   HMAC-SHA256(master, "partner-webhook:<slug>"). The master key never leaves centrix;
+ *   each partner is handed only its derived secret (see `npm run partner:secret`).
+ */
+export function partnerSecret(slug: string): string {
+  const specific = process.env[`PARTNER_SECRET_${slug.toUpperCase()}`]
+  if (specific) return specific
+  const master = process.env.PARTNER_WEBHOOK_SECRET
+  if (!master)
+    throw new Error(
+      `No webhook secret for partner "${slug}": set PARTNER_SECRET_${slug.toUpperCase()} or PARTNER_WEBHOOK_SECRET`
+    )
+  return createHmac("sha256", master)
+    .update(`partner-webhook:${slug}`)
+    .digest("hex")
 }
 
 export function sign(

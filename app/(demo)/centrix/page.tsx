@@ -1,30 +1,16 @@
-"use client"
-
 import Link from "next/link"
-import { useState } from "react"
+import { notFound } from "next/navigation"
+import { connection } from "next/server"
 
 import {
-  api,
-  day,
-  eur,
-  eurDecimal,
-  nameUuid,
-  time,
-  useAction,
-  usePoll,
-} from "@/components/partner-connect/client"
-import {
-  ErrorText,
-  Spinner,
-  StateBadge,
-  Tracking,
-} from "@/components/partner-connect/status"
-import type {
-  RunView,
-  UnitResponse,
-  UnitRow,
-} from "@/components/partner-connect/types"
-import { Button } from "@/components/ui/button"
+  contactTenantAction,
+  fireMoveInAction,
+  resetDemoAction,
+} from "@/app/(demo)/actions"
+import { ActionButton } from "@/components/partner-connect/action-button"
+import { AutoRefresh } from "@/components/partner-connect/auto-refresh"
+import { day, eur, eurDecimal, time } from "@/components/partner-connect/format"
+import { StateBadge, Tracking } from "@/components/partner-connect/status"
 import {
   Card,
   CardAction,
@@ -33,62 +19,55 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
+import { getUnitSnapshot, listUnits } from "@/lib/centrix/repository"
+import { getDb } from "@/lib/db"
 import { DEMO_UNIT_ID } from "@/lib/demo"
+import { AppError } from "@/lib/errors"
+import { isUuid } from "@/lib/ids"
 import { cn } from "@/lib/utils"
+import { getRunView, listRuns } from "@/lib/workflow/engine"
 
-export default function CentrixPage() {
-  const units = usePoll<UnitRow[]>("/api/centrix/units", 10_000)
-  const [unitId, setUnitId] = useState(DEMO_UNIT_ID)
-  const unit = usePoll<UnitResponse>(`/api/centrix/units/${unitId}`)
-  const [runId, setRunId] = useState<string | null>(null)
-  const action = useAction()
+const CONTRACT_BADGE: Record<string, string> = {
+  signed: "confirmed",
+  active: "active",
+  cancelled: "rejected",
+}
 
-  const snapshot = unit.data?.snapshot
-  const runs = unit.data?.workflows ?? []
+/** The property manager's view: units, the moment detected on a unit, and its workflows. */
+export default async function CentrixPage({
+  searchParams,
+}: PageProps<"/centrix">) {
+  await connection()
+  const sp = await searchParams
+  const unitId =
+    typeof sp.unit === "string" && isUuid(sp.unit) ? sp.unit : DEMO_UNIT_ID
+  const db = getDb()
+
+  const [units, snapshot, runs] = await Promise.all([
+    listUnits(db),
+    getUnitSnapshot(db, unitId).catch((e) => {
+      if (e instanceof AppError && e.status === 404) notFound()
+      throw e
+    }),
+    listRuns(db, { unitId }),
+  ])
   const selectedRun =
-    runId && runs.some((r) => r.id === runId) ? runId : (runs[0]?.id ?? null)
-
-  const fireMoveIn = () =>
-    action.run("event", async () => {
-      if (!snapshot?.tenant) throw { message: "This unit has no tenant." }
-      await api("/api/centrix/events", {
-        method: "POST",
-        body: JSON.stringify({
-          // Same move-in -> same event id: firing it twice returns the existing runs instead
-          // of starting a second flow (and a second order) for the same tenant.
-          id: await nameUuid(
-            `tenant.move_in:${unitId}:${snapshot.tenant.move_in}`
-          ),
-          event: "tenant.move_in",
-          unit_id: unitId,
-          contact_id: snapshot.tenant.contact_id,
-          data: { move_in_date: snapshot.tenant.move_in },
-        }),
-      })
-      await unit.refresh()
-    })
-
-  const reset = () =>
-    action.run("reset", async () => {
-      await api("/api/demo/reset", { method: "POST" })
-      setRunId(null)
-      await unit.refresh()
-    })
+    runs.find((r) => r.id === sp.run)?.id ?? runs[0]?.id ?? null
+  const view = selectedRun ? await getRunView(db, selectedRun) : null
+  const href = (q: { unit?: string; run?: string }) =>
+    `/centrix?${new URLSearchParams({ unit: unitId, ...q })}`
 
   return (
     <div className="grid gap-4 lg:grid-cols-[220px_1fr]">
+      <AutoRefresh />
       <aside className="space-y-2">
         <h1 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
           Units
         </h1>
-        {units.data?.map((u) => (
-          <button
+        {units.map((u) => (
+          <Link
             key={u.id}
-            type="button"
-            onClick={() => {
-              setUnitId(u.id)
-              setRunId(null)
-            }}
+            href={href({ unit: u.id })}
             className={cn(
               "block w-full border px-3 py-2 text-left text-sm",
               u.id === unitId
@@ -98,100 +77,91 @@ export default function CentrixPage() {
           >
             <span className="font-medium">{u.identifier}</span>{" "}
             <span className="text-muted-foreground">· {u.street}</span>
-          </button>
+          </Link>
         ))}
-        <div className="pt-4">
-          <Button
-            variant="ghost"
-            onClick={reset}
-            disabled={action.pending !== null}
-          >
-            {action.pending === "reset" && <Spinner />}
+        <div className="flex flex-wrap pt-4">
+          <ActionButton variant="ghost" action={resetDemoAction}>
             Reset demo data
-          </Button>
+          </ActionButton>
         </div>
       </aside>
 
       <div className="min-w-0 space-y-4">
-        <ErrorText>{unit.error || action.error}</ErrorText>
-        {snapshot && (
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                Unit {snapshot.unit.identifier} · {snapshot.property.address}
-              </CardTitle>
-              <CardAction>
-                <Button
-                  onClick={fireMoveIn}
-                  disabled={!snapshot.tenant || action.pending !== null}
-                >
-                  {action.pending === "event" && <Spinner />}
-                  Fire event: tenant.move_in
-                </Button>
-              </CardAction>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-4">
-                <Info k="Tenant" v={snapshot.tenant?.name ?? "–"} />
-                <Info k="Move-in" v={day(snapshot.tenant?.move_in)} />
-                <Info k="Owner" v={snapshot.owner?.name ?? "–"} />
-                <Info k="WEG" v={snapshot.property.is_weg ? "yes" : "no"} />
-                <Info
-                  k="Size"
-                  v={`${snapshot.unit.size_sqm ?? "–"} m² · ${snapshot.unit.rooms ?? "–"} rooms`}
-                />
-                <Info k="Heating" v={snapshot.property.heating ?? "–"} />
-                <Info
-                  k="Energy class"
-                  v={snapshot.property.energy_certificate.class ?? "–"}
-                />
-                <Info k="Meter" v={snapshot.unit.meters[0]?.number ?? "–"} />
-              </dl>
-              <Separator />
-              <div>
-                <h3 className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                  Service contracts on this unit
-                </h3>
-                {snapshot.service_contracts.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    None yet. Fire the move-in event to start.
-                  </p>
-                ) : (
-                  <ul className="space-y-1 text-sm">
-                    {snapshot.service_contracts.map((c) => (
-                      <li
-                        key={c.id}
-                        className="flex flex-wrap items-center gap-2"
-                      >
-                        <StateBadge
-                          state={c.status === "active" ? "active" : "confirmed"}
-                        />
-                        <span className="font-medium">{c.product}</span>
-                        <span className="text-muted-foreground">
-                          · {c.partner_name} · {eurDecimal(c.monthly_price_eur)}
-                          /mo · from {day(c.start_date)}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          consent via {c.consent.channel}:{" "}
-                          {c.consent.data_shared.join(", ")}
-                          {c.consent.revoked_at ? " (withdrawn)" : ""}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              Unit {snapshot.unit.identifier} · {snapshot.property.address}
+            </CardTitle>
+            <CardAction className="flex flex-wrap justify-end">
+              <ActionButton
+                action={fireMoveInAction.bind(null, unitId)}
+                disabled={!snapshot.tenant}
+              >
+                Fire event: tenant.move_in
+              </ActionButton>
+            </CardAction>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-4">
+              <Info k="Tenant" v={snapshot.tenant?.name ?? "–"} />
+              <Info k="Move-in" v={day(snapshot.tenant?.move_in)} />
+              <Info k="Owner" v={snapshot.owner?.name ?? "–"} />
+              <Info k="WEG" v={snapshot.property.is_weg ? "yes" : "no"} />
+              <Info
+                k="Size"
+                v={`${snapshot.unit.size_sqm ?? "–"} m² · ${snapshot.unit.rooms ?? "–"} rooms`}
+              />
+              <Info k="Heating" v={snapshot.property.heating ?? "–"} />
+              <Info
+                k="Energy class"
+                v={snapshot.property.energy_certificate.class ?? "–"}
+              />
+              <Info k="Meter" v={snapshot.unit.meters[0]?.number ?? "–"} />
+            </dl>
+            <Separator />
+            <div>
+              <h3 className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                Service contracts on this unit
+              </h3>
+              {snapshot.service_contracts.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  None yet. Fire the move-in event to start.
+                </p>
+              ) : (
+                <ul className="space-y-1 text-sm">
+                  {snapshot.service_contracts.map((c) => (
+                    <li
+                      key={c.id}
+                      className="flex flex-wrap items-center gap-2"
+                    >
+                      <StateBadge
+                        state={CONTRACT_BADGE[c.status] ?? c.status}
+                        label={c.status}
+                      />
+                      <span className="font-medium">{c.product}</span>
+                      <span className="text-muted-foreground">
+                        · {c.partner_name} · {eurDecimal(c.monthly_price_eur)}
+                        /mo · from {day(c.start_date)}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        consent via {c.consent.channel}:{" "}
+                        {c.consent.data_shared.join(", ")}
+                        {c.consent.revoked_at ? " (withdrawn)" : ""}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         {runs.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {runs.map((r) => (
-              <button
+              <Link
                 key={r.id}
-                type="button"
-                onClick={() => setRunId(r.id)}
+                href={href({ run: r.id })}
                 className={cn(
                   "flex items-center gap-2 border bg-background px-3 py-1.5 text-sm",
                   r.id === selectedRun
@@ -200,11 +170,11 @@ export default function CentrixPage() {
                 )}
               >
                 {r.partnerName ?? r.partnerSlug} <StateBadge state={r.state} />
-              </button>
+              </Link>
             ))}
           </div>
         )}
-        {selectedRun && <RunPanel key={selectedRun} runId={selectedRun} />}
+        {view && <RunPanel view={view} />}
       </div>
     </div>
   )
@@ -219,32 +189,12 @@ function Info({ k, v }: { k: string; v: string }) {
   )
 }
 
-function RunPanel({ runId }: { runId: string }) {
-  const view = usePoll<RunView>(`/api/workflows/${runId}`)
-  const action = useAction()
-  const v = view.data
-  if (!v)
-    return (
-      <Card>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">Loading workflow…</p>
-        </CardContent>
-      </Card>
-    )
+function RunPanel({
+  view: v,
+}: {
+  view: Awaited<ReturnType<typeof getRunView>>
+}) {
   const o = v.offer
-
-  const contact = (
-    channel: "voice" | "portal",
-    approvedBy: "system" | "property_manager"
-  ) =>
-    action.run(channel, async () => {
-      await api(`/api/workflows/${runId}/contact`, {
-        method: "POST",
-        body: JSON.stringify({ channel, approved_by: approvedBy }),
-      })
-      await view.refresh()
-    })
-
   return (
     <div className="grid gap-4 xl:grid-cols-[1fr_320px]">
       <div className="min-w-0 space-y-4">
@@ -289,21 +239,17 @@ function RunPanel({ runId }: { runId: string }) {
                   {v.tenant?.name ?? "the tenant"} with this offer.
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  <Button
-                    onClick={() => contact("voice", "system")}
-                    disabled={action.pending !== null}
+                  <ActionButton
+                    action={contactTenantAction.bind(null, v.run.id, "voice")}
                   >
-                    {action.pending === "voice" && <Spinner />}
                     Call tenant (voice agent)
-                  </Button>
-                  <Button
+                  </ActionButton>
+                  <ActionButton
                     variant="outline"
-                    onClick={() => contact("portal", "property_manager")}
-                    disabled={action.pending !== null}
+                    action={contactTenantAction.bind(null, v.run.id, "portal")}
                   >
-                    {action.pending === "portal" && <Spinner />}
                     Approve &amp; send to portal
-                  </Button>
+                  </ActionButton>
                 </div>
               </div>
             )}
@@ -317,7 +263,6 @@ function RunPanel({ runId }: { runId: string }) {
                 </Link>
               </p>
             )}
-            <ErrorText>{action.error}</ErrorText>
           </CardContent>
         </Card>
 

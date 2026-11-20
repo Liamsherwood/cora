@@ -13,9 +13,13 @@ import {
   listPartners,
   type RegisteredPartner,
 } from "@/lib/connectors/registry"
-import type { ShareableField, StatusUpdate } from "@/lib/connectors/spec"
+import type {
+  PartnerStatus,
+  ShareableField,
+  StatusUpdate,
+} from "@/lib/connectors/spec"
 import { conflict, notFound, unprocessable } from "@/lib/errors"
-import { isUuid, newId } from "@/lib/ids"
+import { isUuid, nameUuid, newId } from "@/lib/ids"
 import { centsToEur, eurToCents, formatEur } from "@/lib/money"
 import { addDays, clock, now, toDay } from "@/lib/time"
 
@@ -338,6 +342,22 @@ export async function triggerEvent(db: DB, input: TriggerInput) {
   }
 }
 
+/**
+ * The move-in of the unit's current tenant, as centrix would emit it. The event id is
+ * derived from unit + move-in day, so firing it twice is the same event (no second flow).
+ */
+export async function detectMoveIn(db: DB, unitId: string) {
+  const snapshot = await getUnitSnapshot(db, unitId)
+  if (!snapshot.tenant) throw unprocessable("This unit has no tenant.")
+  return triggerEvent(db, {
+    id: nameUuid(`tenant.move_in:${unitId}:${snapshot.tenant.move_in}`),
+    type: "tenant.move_in",
+    unit_id: unitId,
+    party_id: snapshot.tenant.contact_id,
+    payload: { move_in_date: snapshot.tenant.move_in },
+  })
+}
+
 // ------------------------------------------------------------------ 2+3. reach the resident
 
 export async function markOfferSent(
@@ -657,6 +677,27 @@ const ORDER_RANK: Record<string, number> = {
   rejected: 3,
 }
 
+type ContractStatus = (typeof t.CONTRACT_STATUSES)[number]
+
+/**
+ * The contract on the unit after a partner status update. A partner that accepted and
+ * then rejects cancels the signed contract; a rejection before acceptance leaves none.
+ */
+export function contractAfter(
+  status: PartnerStatus,
+  current: ContractStatus | null
+): ContractStatus | null {
+  switch (status) {
+    case "accepted":
+    case "scheduled":
+      return "signed"
+    case "active":
+      return "active"
+    case "rejected":
+      return current ? "cancelled" : null
+  }
+}
+
 export async function applyPartnerStatus(
   db: DB,
   partnerSlug: string,
@@ -722,26 +763,25 @@ export async function applyPartnerStatus(
 
       const startDate = update.activation_date ?? order.startDate
       // Write the result back onto the unit: the confirmed order *is* the service contract.
-      const contractStatus =
-        update.status === "active"
-          ? "active"
-          : update.status === "rejected"
-            ? order.contractStatus
-            : "signed"
+      const contractStatus = contractAfter(
+        update.status,
+        order.contractStatus as ContractStatus | null
+      )
+      const inForce = contractStatus === "signed" || contractStatus === "active"
       await tx
         .update(t.serviceOrders)
         .set({
           status: update.status,
           startDate,
           contractStatus,
-          monthlyPriceEur:
-            contractStatus != null
-              ? centsToEur(offer.monthly_price_cents)
-              : order.monthlyPriceEur,
+          // The price stays on a cancelled contract as a record of what was agreed.
+          monthlyPriceEur: inForce
+            ? centsToEur(offer.monthly_price_cents)
+            : order.monthlyPriceEur,
           bridge:
-            contractStatus != null && offer.bridge
+            inForce && offer.bridge
               ? { product: offer.bridge.product, until: startDate }
-              : order.bridge,
+              : null,
           updatedAt: clock(),
         })
         .where(eq(t.serviceOrders.id, order.id))

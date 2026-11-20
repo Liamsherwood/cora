@@ -51,9 +51,10 @@ npm run db:seed
 npm run dev
 ```
 
-`npm run db:seed` loads the demo data from `data/seed.json` and registers the
-partners in `data/partners/`. It does nothing if data already exists; use
-`npm run db:seed -- --reset` to wipe every table and start over.
+`npm run db:seed` writes the demo data from `data/seed.json` (an idempotent
+upsert by id) and registers the partners in `data/partners/`. Use
+`npm run db:seed -- --reset` to also clear the demo's workflows on the seed
+units. Neither truncates a table or touches rows outside the seed.
 
 Open Cora at `http://localhost:3000`. Use Supabase Studio to inspect your local
 database. The local stack includes Auth and a private `documents` storage bucket.
@@ -189,8 +190,7 @@ once per database as a release step with `npm run db:migrate`.
 Move-in → internet for the reltix track: a centrix event fires, the tenant is
 reached by a voice agent or the portal, consents in one step, the partner gets a
 pre-filled order, and the contract lands on the unit. A second partner
-(electricity) plugs into the same event through a manifest only. Background and
-decisions are in [`CONTEXT.md`](CONTEXT.md).
+(electricity) plugs into the same event through a manifest only.
 
 Click path (after `npm run db:seed` and `npm run dev`):
 
@@ -201,14 +201,20 @@ Click path (after `npm run db:seed` and `npm run dev`):
 4. **/partner** → *Accept order* → *Mark as live* (signed webhooks)
 5. Back in **/centrix**: contract on the unit, timeline, cost per case
 
-*Reset demo data* in the centrix sidebar restores the seed (`DEMO_MODE=true`).
+*Reset demo data* in the centrix sidebar (`DEMO_MODE=true`) clears the
+workflows, consents and orders on the seed units and restores the seed rows.
+Other data is left alone.
+
+The demo screens are Server Components that read through the same engine
+functions as the API; buttons are Server Actions, and each screen re-renders on
+the server every few seconds while it is visible.
 
 | Folder            | What                                                              |
 | ----------------- | ----------------------------------------------------------------- |
 | `lib/workflow/`   | state machine, offer and lead-time maths, consent, minimisation   |
 | `lib/connectors/` | partner connector spec v1 (zod) and the partner registry          |
 | `lib/centrix/`    | mock centrix API over the portfolio tables                        |
-| `lib/partner/`    | HMAC-SHA256 webhook signing and verification                      |
+| `lib/partner/`    | webhook signing (one secret per partner), feed, demo simulator    |
 | `lib/voice/`      | ElevenLabs outbound call and context                              |
 | `app/api/`        | HTTP routes; `app/(demo)/` the three demo screens                 |
 | `data/`           | `seed.json` (fixed UUIDs) and one manifest per partner            |
@@ -219,6 +225,11 @@ the engine and the manifests work in integer cents and convert at the database
 boundary (`lib/money.ts`). Workflow states are fixed:
 `detected → offer_sent → consent_given → ordered → confirmed → active → closed`,
 plus `declined`, `rejected` and `no_eligible_offer`.
+
+Partner webhook secrets: each partner signs with its own secret, either
+`PARTNER_SECRET_<SLUG>` or one derived from the master key
+`PARTNER_WEBHOOK_SECRET`. `npm run partner:secret -- example_fibre` prints the
+secret to hand to that partner; the master key itself is never shared.
 
 Demo environment variables are listed in [`.env.example`](.env.example).
 `DATABASE_POOL_MAX` sets the connection pool (default 5; use 1 behind a

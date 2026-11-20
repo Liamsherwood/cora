@@ -54,3 +54,7 @@ CREATE INDEX chat_state_cache_expires_idx ON chat_state_cache (expires_at);
 CREATE INDEX chat_state_lists_expires_idx ON chat_state_lists (expires_at);
 --> statement-breakpoint
 CREATE INDEX chat_state_queues_expires_idx ON chat_state_queues (expires_at);
+--> statement-breakpoint
+-- drizzle runs all pending migrations in one transaction: restore the search path
+-- so the migrations after this one create their objects in public again.
+SET LOCAL search_path TO DEFAULT;

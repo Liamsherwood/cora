@@ -1,19 +1,10 @@
-"use client"
+import { connection } from "next/server"
 
-import {
-  api,
-  day,
-  time,
-  useAction,
-  usePoll,
-} from "@/components/partner-connect/client"
-import {
-  ErrorText,
-  Spinner,
-  StateBadge,
-} from "@/components/partner-connect/status"
-import type { PartnerOrder } from "@/components/partner-connect/types"
-import { Button } from "@/components/ui/button"
+import { partnerStatusAction } from "@/app/(demo)/actions"
+import { ActionButton } from "@/components/partner-connect/action-button"
+import { AutoRefresh } from "@/components/partner-connect/auto-refresh"
+import { day, time } from "@/components/partner-connect/format"
+import { StateBadge } from "@/components/partner-connect/status"
 import {
   Card,
   CardAction,
@@ -22,6 +13,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { getDb } from "@/lib/db"
+import { listPartnerFeed } from "@/lib/partner/feed"
 
 /** Order status -> the workflow state it corresponds to, for a consistent badge. */
 const BADGE: Record<string, string> = {
@@ -36,25 +29,13 @@ const BADGE: Record<string, string> = {
  * Stand-in for the partner's own system. Each button makes the partner backend send a
  * signed status webhook to centrix (HMAC-SHA256), exactly as a real integration would.
  */
-export default function PartnerPage() {
-  const orders = usePoll<PartnerOrder[]>("/api/partner/orders")
-  const action = useAction()
-
-  const send = (
-    orderId: string,
-    status: string,
-    extra: Record<string, string> = {}
-  ) =>
-    action.run(`${orderId}:${status}`, async () => {
-      await api(`/api/partner-sim/orders/${orderId}/status`, {
-        method: "POST",
-        body: JSON.stringify({ status, ...extra }),
-      })
-      await orders.refresh()
-    })
+export default async function PartnerPage() {
+  await connection()
+  const orders = await listPartnerFeed(getDb())
 
   return (
     <div className="space-y-4">
+      <AutoRefresh />
       <div>
         <h1 className="text-lg font-semibold">Partner dashboard</h1>
         <p className="text-sm text-muted-foreground">
@@ -62,8 +43,7 @@ export default function PartnerPage() {
           forms, no calls.
         </p>
       </div>
-      <ErrorText>{orders.error || action.error}</ErrorText>
-      {orders.data?.length === 0 && (
+      {orders.length === 0 && (
         <Card>
           <CardContent>
             <p className="text-sm text-muted-foreground">No orders yet.</p>
@@ -71,11 +51,9 @@ export default function PartnerPage() {
         </Card>
       )}
       <div className="grid gap-4 md:grid-cols-2">
-        {orders.data?.map((o) => {
-          const spin = (s: string) =>
-            action.pending === `${o.id}:${s}` && <Spinner />
-          const busy = action.pending !== null
+        {orders.map((o) => {
           const terminal = o.status === "active" || o.status === "rejected"
+          const send = partnerStatusAction.bind(null, o.id)
           return (
             <Card key={o.id}>
               <CardHeader>
@@ -97,51 +75,42 @@ export default function PartnerPage() {
                 {!terminal && (
                   <div className="flex flex-wrap gap-2">
                     {o.status === "sent" && (
-                      <Button
-                        onClick={() => send(o.id, "accepted")}
-                        disabled={busy}
+                      <ActionButton
+                        action={send.bind(null, { status: "accepted" })}
                       >
-                        {spin("accepted")}
                         Accept order
-                      </Button>
+                      </ActionButton>
                     )}
                     {o.statuses.includes("scheduled") &&
                       (o.status === "accepted" || o.status === "sent") && (
-                        <Button
+                        <ActionButton
                           variant="outline"
-                          onClick={() =>
-                            send(o.id, "scheduled", {
-                              activation_date: o.start_date,
-                            })
-                          }
-                          disabled={busy}
+                          action={send.bind(null, {
+                            status: "scheduled",
+                            activation_date: o.start_date,
+                          })}
                         >
-                          {spin("scheduled")}
                           Schedule activation
-                        </Button>
+                        </ActionButton>
                       )}
-                    <Button
+                    <ActionButton
                       variant="outline"
-                      onClick={() =>
-                        send(o.id, "active", { activation_date: o.start_date })
-                      }
-                      disabled={busy}
+                      action={send.bind(null, {
+                        status: "active",
+                        activation_date: o.start_date,
+                      })}
                     >
-                      {spin("active")}
                       Mark as live
-                    </Button>
-                    <Button
+                    </ActionButton>
+                    <ActionButton
                       variant="destructive"
-                      onClick={() =>
-                        send(o.id, "rejected", {
-                          note: "Address not serviceable",
-                        })
-                      }
-                      disabled={busy}
+                      action={send.bind(null, {
+                        status: "rejected",
+                        note: "Address not serviceable",
+                      })}
                     >
-                      {spin("rejected")}
                       Reject
-                    </Button>
+                    </ActionButton>
                   </div>
                 )}
               </CardContent>
