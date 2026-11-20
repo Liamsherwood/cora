@@ -2,6 +2,7 @@ import {
   verifyMetaSignature,
   verifyMetaWebhookChallenge,
 } from "@chat-adapter/shared"
+import { WhatsAppApiError } from "@chat-adapter/whatsapp"
 import { after } from "next/server"
 
 import { getWhatsAppBot } from "@/lib/whatsapp/bot"
@@ -38,16 +39,21 @@ export async function POST(request: Request) {
     return new Response("Invalid signature", { status: 401 })
   }
 
+  console.info("WhatsApp webhook received")
   try {
     return await getWhatsAppBot().webhooks.whatsapp(request, {
       propagateHandlerErrors: true,
       waitUntil: (task) => {
         after(
           task.catch((error: unknown) => {
-            console.error(
-              "WhatsApp reply failed",
-              error instanceof Error ? error.name : ""
-            )
+            console.error("WhatsApp reply failed", {
+              name: error instanceof Error ? error.name : "Unknown",
+              ...(error instanceof WhatsAppApiError && {
+                httpStatus: error.status,
+                metaCode: error.errorCode,
+                metaSubcode: error.subcode,
+              }),
+            })
           })
         )
       },

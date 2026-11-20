@@ -6,7 +6,7 @@ import {
   type WhatsAppRawMessage,
 } from "@chat-adapter/whatsapp"
 import { generateText, type ModelMessage } from "ai"
-import { Chat, ConsoleLogger } from "chat"
+import { Chat, ConsoleLogger, type Thread } from "chat"
 import { Pool } from "pg"
 
 const day = 24 * 60 * 60 * 1000
@@ -21,6 +21,12 @@ For requests requiring a person or access to records, direct them to contact the
 Never claim you filed a request, contacted someone, scheduled work, or accessed property or tenant records.
 Never ask for payment details, passwords, or identity documents.
 Politely redirect unrelated requests to property-management topics.`
+
+async function postReply(thread: Thread, text: string, kind: "echo" | "assistant") {
+  console.info("WhatsApp reply sending", { kind })
+  await thread.post({ raw: text })
+  console.info("WhatsApp reply accepted by Meta", { kind })
+}
 
 function createBot() {
   const databaseUrl = process.env.DATABASE_URL
@@ -65,15 +71,16 @@ function createBot() {
     const textParts: string[] = []
     for (const entry of [...(context?.skipped ?? []), message]) {
       const raw = entry.raw as WhatsAppRawMessage | null
-      if (
-        raw?.phoneNumberId !== process.env.WHATSAPP_PHONE_NUMBER_ID ||
-        raw?.message.type !== "text"
-      ) {
+      if (raw?.message.type !== "text") continue
+      if (raw.phoneNumberId !== process.env.WHATSAPP_PHONE_NUMBER_ID) {
+        console.info("WhatsApp reply skipped", {
+          reason: "phone_number_id_mismatch",
+        })
         continue
       }
 
       if (entry.text === "Test!") {
-        await thread.post({ raw: "Received: Test!" })
+        await postReply(thread, "Received: Test!", "echo")
         continue
       }
 
@@ -108,7 +115,7 @@ function createBot() {
       )
     }
 
-    await thread.post({ raw: reply })
+    await postReply(thread, reply, "assistant")
     if (reply !== fallbackReply) {
       conversation.push({ role: "assistant", content: reply })
       await state.set(conversationKey, conversation.slice(-8), day)
