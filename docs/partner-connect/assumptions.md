@@ -1,7 +1,7 @@
 # Assumptions ("tell us what you assumed")
 
 ## Real vs mocked
-- **Mocked:** centrix itself (tables `centrix_*` behind `/api/centrix/*`, swappable for the real API), the partner's backend (partner dashboard + signed webhooks), telephony if no ElevenLabs/Twilio keys are set (call is simulated).
+- **Mocked:** centrix itself (the portfolio tables in `lib/db/schema`, read only through `lib/centrix/repository.ts` behind `/api/centrix/*`, swappable for the real API), the partner's backend (partner dashboard + signed webhooks), telephony if no ElevenLabs/Twilio keys are set (call is simulated).
 - **Real:** the workflow engine, consent gate, data minimisation, webhook signing/verification, idempotency, the connector spec validation, the ElevenLabs outbound call + server tool when keys are configured.
 
 ## Data centrix realistically holds

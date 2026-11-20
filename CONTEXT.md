@@ -35,9 +35,9 @@ No reltix API or dataset: we mock centrix ourselves. "Keep it realistic and tell
 
 ## What already exists
 - `lib/db/schema` (Liam): data model matching our ER diagram – portfolio (properties, buildings, units, parties, ownerships, leases, lease_parties, mandates, assets, meters), operations (cases, work_orders, documents, events), partners (partners, partner_offers, consents, service_orders), workflows (workflow_runs, conversations, messages, audit_events). Next.js 16, Supabase, RLS on.
-- `reference/centrix-connect/` (Anis): **complete, tested standalone implementation** of the whole flow (Next 15, own schema with `centrix_`/`partner_`/`ai_` prefixes, PGlite fallback). 22 tests, independently reviewed. Read its `README.md`, `docs/connector-spec.md`, `docs/assumptions.md`, `docs/voice-agent-prompt.md`, `src/workflow/engine.ts`, `src/connectors/spec.ts`.
+- Partner Connect (Anis): ported from the standalone reference implementation onto `lib/db/schema` and merged into `main` – engine in `lib/workflow/`, connector spec in `lib/connectors/spec.ts`, demo pages in `app/(demo)/`. The reference app itself was removed after the port (it is still in git history before the commit that removed `reference/`). Its docs live in `docs/partner-connect/`: `connector-spec.md`, `assumptions.md`, `voice-agent-prompt.md`.
 
-## The job now: port reference/ onto lib/db/schema
+## The port (done)
 1. Read `AGENTS.md` and `node_modules/next/dist/docs/` first (Next 16 differs from 15: params, caching, etc.).
 2. Keep ONE data model: Liam's. Map reference tables to his; add only what's missing (likely: a written-back service contract or status on `service_orders`, partner manifest JSON on `partners`, cost/idempotency columns on `audit_events`). Generate migrations with `npm run db:generate -- --name=...`.
 3. Follow Liam's conventions: decimals as strings (reference uses integer cents – convert), composite FKs, consent checked before every order, revocation keeps history, server-side DB access only.

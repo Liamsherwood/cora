@@ -1,6 +1,6 @@
 # centrix Partner Connector Spec v1
 
-A partner plugs into centrix by shipping **one JSON manifest**. No code changes on the centrix side: the workflow engine reads triggers, eligibility, required data and the order channel from the manifest. The machine-readable source of truth is the Zod schema in `src/connectors/spec.ts`; this page explains it.
+A partner plugs into centrix by shipping **one JSON manifest**. No code changes on the centrix side: the workflow engine reads triggers, eligibility, required data and the order channel from the manifest. The machine-readable source of truth is the Zod schema in `lib/connectors/spec.ts`; this page explains it.
 
 Live proof: `POST /api/partners/validate` checks a manifest, `POST /api/partners` registers it. The next matching centrix event creates a workflow for the new partner automatically.
 
@@ -50,7 +50,7 @@ Only the consented fields plus the order details (`product`, `offer_id`, `reques
 `POST /api/partner/webhook/{partner_id}`
 
 ```json
-{ "order_id": "ord_…", "status": "accepted", "event_id": "unique-per-delivery",
+{ "order_id": "<order uuid>", "status": "accepted", "event_id": "unique-per-delivery",
   "occurred_at": "2026-11-20T10:00:00Z", "activation_date": "2026-12-04", "note": "optional" }
 ```
 

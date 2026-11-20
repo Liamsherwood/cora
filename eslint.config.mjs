@@ -12,8 +12,6 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
-    // Reference implementation to port from; not part of the app build.
-    "reference/**",
   ]),
 ]);
 
