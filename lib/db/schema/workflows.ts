@@ -15,20 +15,9 @@ import {
 import { cases, events } from "./operations"
 import { partnerOffers, partners } from "./partners"
 import { parties } from "./portfolio"
+import { WORKFLOW_STATES } from "../../workflow/state-names"
 
-/** Agreed workflow states. Fixed – do not rename without telling the team. */
-export const WORKFLOW_STATES = [
-  "detected",
-  "offer_sent",
-  "consent_given",
-  "ordered",
-  "confirmed",
-  "active",
-  "closed",
-  "no_eligible_offer",
-  "declined",
-  "rejected",
-] as const
+export { WORKFLOW_STATES }
 
 export const workflowRuns = pgTable(
   "workflow_runs",
