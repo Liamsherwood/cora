@@ -1,9 +1,10 @@
-import { and, desc, eq, isNotNull } from "drizzle-orm"
+import { and, asc, desc, eq, gte, isNotNull, isNull, or } from "drizzle-orm"
 
 import type { Exec } from "@/lib/db"
 import * as t from "@/lib/db/schema"
 import { notFound } from "@/lib/errors"
 import { isUuid } from "@/lib/ids"
+import { now, toDay } from "@/lib/time"
 
 /**
  * Mock of the centrix API. The workflow engine reads portfolio data (units, leases,
@@ -85,13 +86,20 @@ export async function getUnitSnapshot(
     .where(eq(t.units.id, unitId))
   if (!row) throw notFound(`unit ${unitId}`)
 
+  const today = toDay(now())
   const [meters, owners, leaseRows, contracts] = await Promise.all([
     db.select().from(t.meters).where(eq(t.meters.unitId, unitId)),
     db
       .select({ party: t.parties })
       .from(t.ownerships)
       .innerJoin(t.parties, eq(t.ownerships.partyId, t.parties.id))
-      .where(eq(t.ownerships.unitId, unitId)),
+      .where(
+        and(
+          eq(t.ownerships.unitId, unitId),
+          or(isNull(t.ownerships.validTo), gte(t.ownerships.validTo, today))
+        )
+      )
+      .orderBy(desc(t.ownerships.validFrom)),
     db
       .select({ lease: t.leases, party: t.parties, role: t.leaseParties.role })
       .from(t.leases)
@@ -102,8 +110,13 @@ export async function getUnitSnapshot(
     listServiceContracts(db, unitId),
   ])
 
-  // Most recent lease's primary tenant = the resident we talk to.
-  const tenantRow = leaseRows.find((l) => l.role === "tenant")
+  // Primary tenant of the most recent lease that hasn't ended = the resident we talk
+  // to (an upcoming move-in counts). A unit whose last lease has ended is vacant.
+  const tenantRow = leaseRows.find(
+    (l) =>
+      l.role === "tenant" &&
+      (l.lease.endDate === null || l.lease.endDate >= today)
+  )
   const owner = owners[0]?.party ?? null
   const leases = [
     ...new Map(leaseRows.map((l) => [l.lease.id, l.lease])).values(),
@@ -203,16 +216,18 @@ export async function listUnits(db: Exec) {
     .select({
       id: t.units.id,
       identifier: t.units.identifier,
+      propertyId: t.units.propertyId,
       street: t.properties.street,
       address: t.properties.address,
       city: t.properties.city,
     })
     .from(t.units)
     .innerJoin(t.properties, eq(t.units.propertyId, t.properties.id))
-    .orderBy(t.units.identifier)
+    .orderBy(asc(t.properties.address), asc(t.units.identifier))
   return rows.map((r) => ({
     id: r.id,
     identifier: r.identifier,
+    property_id: r.propertyId,
     street: r.street ?? r.address,
     city: r.city,
   }))
