@@ -260,7 +260,7 @@ export async function seedIfEmpty(db: DB): Promise<boolean> {
 
 /** Every application table, taken from the schema so a new table can't be forgotten. */
 function appTables(): string[] {
-  return Object.values(t)
+  return (Object.values(t) as unknown[])
     .filter((v): v is PgTable => is(v, PgTable))
     .map((v) => getTableConfig(v).name)
 }
