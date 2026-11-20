@@ -44,14 +44,53 @@ Copy the **Publishable** key printed by Supabase into
 
 ```bash
 npm run db:migrate
+npm run db:seed
 npm run dev
 ```
+
+`npm run db:seed` loads the demo data from `data/seed.json` and registers the
+partners in `data/partners/`. It does nothing if data already exists; use
+`npm run db:seed -- --reset` to wipe every table and start over.
 
 Open [Cora](http://localhost:3000) or [Supabase Studio](http://127.0.0.1:64323).
 The local stack includes Auth and a private `documents` storage bucket. Drizzle
 manages the application migrations in `drizzle/`.
 
 To stop the local Supabase services, run `npx --yes supabase@2.114.0 stop`.
+
+#### Without Docker
+
+The app and the tests only need PostgreSQL. On macOS without Docker, Homebrew's
+Postgres works (Supabase Auth, Storage and Studio are then not available):
+
+```bash
+brew install postgresql@17
+brew services start postgresql@17
+psql -d postgres -c "CREATE ROLE cora LOGIN PASSWORD 'cora'"
+psql -d postgres -c "CREATE DATABASE cora OWNER cora"
+psql -d postgres -c "CREATE DATABASE cora_test OWNER cora"
+```
+
+Then set in `.env.local`:
+
+```bash
+DATABASE_URL=postgresql://cora:cora@127.0.0.1:5432/cora
+TEST_DATABASE_URL=postgresql://cora:cora@127.0.0.1:5432/cora_test
+```
+
+The `cora` role is deliberately not a superuser: as the owner of the tables it
+can read and write with row-level security on, like the `postgres` role on
+Supabase, while other roles see nothing until policies exist.
+
+#### Tests
+
+```bash
+npm test
+```
+
+Runs against `TEST_DATABASE_URL`. Every run drops and re-migrates that
+database's schema, so its name must end in `_test`; the setup refuses anything
+else and creates the database if it is missing.
 
 ### Hosted Supabase on Vercel
 
@@ -93,6 +132,47 @@ once per database as a release step with `npm run db:migrate`.
 - Store uploaded files in the private `documents` bucket and save a stable object
   reference in `documents.url`. Authorize access before streaming a file or
   issuing a short-lived download URL. [Supabase private buckets](https://supabase.com/docs/guides/storage/buckets/fundamentals#private-buckets)
+
+## Partner Connect demo
+
+Move-in → internet for the reltix track: a centrix event fires, the tenant is
+reached by a voice agent or the portal, consents in one step, the partner gets a
+pre-filled order, and the contract lands on the unit. A second partner
+(electricity) plugs into the same event through a manifest only. Background and
+decisions are in [`CONTEXT.md`](CONTEXT.md).
+
+Click path (after `npm run db:seed` and `npm run dev`):
+
+1. **/centrix**: unit 4B → *Fire event: tenant.move_in* (two workflows appear)
+2. *Call tenant (voice agent)* (simulated without ElevenLabs keys) or *Approve &
+   send to portal*
+3. **Tenant portal (Lena)** → *Agree & order* (shows exactly what is shared)
+4. **/partner** → *Accept order* → *Mark as live* (signed webhooks)
+5. Back in **/centrix**: contract on the unit, timeline, cost per case
+
+*Reset demo data* in the centrix sidebar restores the seed (`DEMO_MODE=true`).
+
+| Folder            | What                                                              |
+| ----------------- | ----------------------------------------------------------------- |
+| `lib/workflow/`   | state machine, offer and lead-time maths, consent, minimisation   |
+| `lib/connectors/` | partner connector spec v1 (zod) and the partner registry          |
+| `lib/centrix/`    | mock centrix API over the portfolio tables                        |
+| `lib/partner/`    | HMAC-SHA256 webhook signing and verification                      |
+| `lib/voice/`      | ElevenLabs outbound call and context                              |
+| `app/api/`        | HTTP routes; `app/(demo)/` the three demo screens                 |
+| `data/`           | `seed.json` (fixed UUIDs) and one manifest per partner            |
+
+Data model notes: a confirmed `service_orders` row *is* the contract on the unit
+(`contract_status` signed/active/cancelled). Money columns are EUR decimals;
+the engine and the manifests work in integer cents and convert at the database
+boundary (`lib/money.ts`). Workflow states are fixed:
+`detected → offer_sent → consent_given → ordered → confirmed → active → closed`,
+plus `declined`, `rejected` and `no_eligible_offer`.
+
+Demo environment variables are listed in [`.env.example`](.env.example).
+`DATABASE_POOL_MAX` sets the connection pool (default 5; use 1 behind a
+transaction pooler). Not built on purpose: route auth (production would use
+partner API keys, signed portal links and a property-manager key).
 
 ## Adding components
 

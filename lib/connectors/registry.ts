@@ -9,8 +9,6 @@ import { centsToEur } from "@/lib/money"
 
 import { ManifestSchema, type Manifest } from "./spec"
 
-const PARTNER_DIR = path.join(process.cwd(), "data", "partners")
-
 /** A partner as the engine sees it: its row id, its manifest and the row ids of its offers. */
 export type RegisteredPartner = {
   /** partners.id (uuid) */
@@ -43,18 +41,24 @@ export function validateManifest(
   return { ok: true, manifest: parsed.data }
 }
 
-/** Reads every manifest in data/partners. Invalid files are reported, never silently skipped. */
-export async function loadManifestFiles(
-  dir = PARTNER_DIR
-): Promise<ManifestLoadResult[]> {
-  const files = (await fs.readdir(dir))
+/**
+ * Reads every manifest in data/partners. Invalid files are reported, never silently skipped.
+ * Paths stay literal (data/partners/...) so the bundler only traces that folder.
+ */
+export async function loadManifestFiles(): Promise<ManifestLoadResult[]> {
+  const files = (await fs.readdir(path.join(process.cwd(), "data", "partners")))
     .filter((f) => f.endsWith(".json"))
     .sort()
   const results: ManifestLoadResult[] = []
   for (const file of files) {
     let raw: unknown
     try {
-      raw = JSON.parse(await fs.readFile(path.join(dir, file), "utf8"))
+      raw = JSON.parse(
+        await fs.readFile(
+          path.join(process.cwd(), "data", "partners", file),
+          "utf8"
+        )
+      )
     } catch (e) {
       results.push({
         ok: false,

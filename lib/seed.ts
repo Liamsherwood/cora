@@ -121,10 +121,11 @@ const SeedSchema = z.object({
 
 export type SeedData = z.infer<typeof SeedSchema>
 
-export async function readSeedFile(
-  file = path.join(process.cwd(), "data", "seed.json")
-): Promise<SeedData> {
-  const raw = JSON.parse(await fs.readFile(file, "utf8"))
+export async function readSeedFile(): Promise<SeedData> {
+  // Literal path so the bundler only traces data/seed.json.
+  const raw = JSON.parse(
+    await fs.readFile(path.join(process.cwd(), "data", "seed.json"), "utf8")
+  )
   const parsed = SeedSchema.safeParse(raw)
   if (!parsed.success) {
     const msg = parsed.error.issues
