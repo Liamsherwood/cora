@@ -133,9 +133,10 @@ manual.
    by Meta over HTTPS without a login. Enter the same `WHATSAPP_VERIFY_TOKEN`,
    click **Verify and save**, and subscribe to the `messages` field.
    [Meta webhook setup](https://developers.facebook.com/documentation/business-messaging/whatsapp/webhooks/create-webhook-endpoint)
-5. From your own WhatsApp account, send the business number a text such as
-   “My kitchen tap is leaking.” Cora should reply with a follow-up question.
-   Reply with another detail to test conversation context.
+5. From your own WhatsApp account, send the business number `Test!`. Cora sends
+   back `Received: Test!` through Meta's API without calling AI Gateway. To test
+   the assistant, send “My kitchen tap is leaking.” Cora should reply with a
+   follow-up question. Reply with another detail to test conversation context.
 
 ## Database
 
