@@ -1,5 +1,5 @@
 {
-  "id": "b979fdab-57bf-464a-b111-9288a83c0148",
+  "id": "61dc91c6-86f2-4e6c-bb8a-54e5e9784686",
   "prevId": "f047a813-febc-4ea2-a0cd-491bc8022622",
   "version": "7",
   "dialect": "postgresql",
@@ -76,9 +76,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "cases_unit_idx": {
           "name": "cases_unit_idx",
@@ -91,9 +91,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "cases_reporter_idx": {
           "name": "cases_reporter_idx",
@@ -106,9 +106,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "cases_asset_idx": {
           "name": "cases_asset_idx",
@@ -121,67 +121,67 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "cases_property_id_properties_id_fk": {
           "name": "cases_property_id_properties_id_fk",
           "tableFrom": "cases",
-          "tableTo": "properties",
           "columnsFrom": [
             "property_id"
           ],
+          "tableTo": "properties",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         },
         "cases_reporter_party_id_parties_id_fk": {
           "name": "cases_reporter_party_id_parties_id_fk",
           "tableFrom": "cases",
-          "tableTo": "parties",
           "columnsFrom": [
             "reporter_party_id"
           ],
+          "tableTo": "parties",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         },
         "cases_unit_property_fk": {
           "name": "cases_unit_property_fk",
           "tableFrom": "cases",
-          "tableTo": "units",
           "columnsFrom": [
             "unit_id",
             "property_id"
           ],
+          "tableTo": "units",
           "columnsTo": [
             "id",
             "property_id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         },
         "cases_asset_property_fk": {
           "name": "cases_asset_property_fk",
           "tableFrom": "cases",
-          "tableTo": "assets",
           "columnsFrom": [
             "asset_id",
             "property_id"
           ],
+          "tableTo": "assets",
           "columnsTo": [
             "id",
             "property_id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -232,24 +232,24 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "documents_case_id_cases_id_fk": {
           "name": "documents_case_id_cases_id_fk",
           "tableFrom": "documents",
-          "tableTo": "cases",
           "columnsFrom": [
             "case_id"
           ],
+          "tableTo": "cases",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -319,9 +319,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "events_party_idx": {
           "name": "events_party_idx",
@@ -334,37 +334,37 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "events_unit_id_units_id_fk": {
           "name": "events_unit_id_units_id_fk",
           "tableFrom": "events",
-          "tableTo": "units",
           "columnsFrom": [
             "unit_id"
           ],
+          "tableTo": "units",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         },
         "events_party_id_parties_id_fk": {
           "name": "events_party_id_parties_id_fk",
           "tableFrom": "events",
-          "tableTo": "parties",
           "columnsFrom": [
             "party_id"
           ],
+          "tableTo": "parties",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -433,9 +433,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "work_orders_contractor_schedule_idx": {
           "name": "work_orders_contractor_schedule_idx",
@@ -454,37 +454,37 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "work_orders_case_id_cases_id_fk": {
           "name": "work_orders_case_id_cases_id_fk",
           "tableFrom": "work_orders",
-          "tableTo": "cases",
           "columnsFrom": [
             "case_id"
           ],
+          "tableTo": "cases",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         },
         "work_orders_contractor_id_parties_id_fk": {
           "name": "work_orders_contractor_id_parties_id_fk",
           "tableFrom": "work_orders",
-          "tableTo": "parties",
           "columnsFrom": [
             "contractor_id"
           ],
+          "tableTo": "parties",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -521,23 +521,11 @@
           "primaryKey": false,
           "notNull": true
         },
-        "workflow_run_id": {
-          "name": "workflow_run_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
         "data_shared": {
           "name": "data_shared",
           "type": "text[]",
           "primaryKey": false,
           "notNull": true
-        },
-        "purpose": {
-          "name": "purpose",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
         },
         "channel": {
           "name": "channel",
@@ -576,9 +564,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "consents_partner_idx": {
           "name": "consents_partner_idx",
@@ -591,77 +579,49 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
-        },
-        "consents_workflow_run_idx": {
-          "name": "consents_workflow_run_idx",
-          "columns": [
-            {
-              "expression": "workflow_run_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "consents_party_id_parties_id_fk": {
           "name": "consents_party_id_parties_id_fk",
           "tableFrom": "consents",
-          "tableTo": "parties",
           "columnsFrom": [
             "party_id"
           ],
+          "tableTo": "parties",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         },
         "consents_partner_id_partners_id_fk": {
           "name": "consents_partner_id_partners_id_fk",
           "tableFrom": "consents",
-          "tableTo": "partners",
           "columnsFrom": [
             "partner_id"
           ],
+          "tableTo": "partners",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "consents_workflow_run_id_workflow_runs_id_fk": {
-          "name": "consents_workflow_run_id_workflow_runs_id_fk",
-          "tableFrom": "consents",
-          "tableTo": "workflow_runs",
-          "columnsFrom": [
-            "workflow_run_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "consents_id_party_partner_key": {
           "name": "consents_id_party_partner_key",
-          "nullsNotDistinct": false,
           "columns": [
             "id",
             "party_id",
             "partner_id"
-          ]
+          ],
+          "nullsNotDistinct": false
         }
       },
       "policies": {},
@@ -687,12 +647,6 @@
         "partner_id": {
           "name": "partner_id",
           "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "key": {
-          "name": "key",
-          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -734,43 +688,35 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "partner_offers_partner_id_partners_id_fk": {
           "name": "partner_offers_partner_id_partners_id_fk",
           "tableFrom": "partner_offers",
-          "tableTo": "partners",
           "columnsFrom": [
             "partner_id"
           ],
+          "tableTo": "partners",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "partner_offers_id_partner_key": {
           "name": "partner_offers_id_partner_key",
-          "nullsNotDistinct": false,
           "columns": [
             "id",
             "partner_id"
-          ]
-        },
-        "partner_offers_partner_key_key": {
-          "name": "partner_offers_partner_key_key",
-          "nullsNotDistinct": false,
-          "columns": [
-            "partner_id",
-            "key"
-          ]
+          ],
+          "nullsNotDistinct": false
         }
       },
       "policies": {},
@@ -797,12 +743,6 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "slug": {
-          "name": "slug",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
         "name": {
           "name": "name",
           "type": "text",
@@ -828,27 +768,12 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'{}'"
-        },
-        "manifest": {
-          "name": "manifest",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'{}'::jsonb"
         }
       },
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "partners_slug_key": {
-          "name": "partners_slug_key",
-          "nullsNotDistinct": false,
-          "columns": [
-            "slug"
-          ]
-        }
-      },
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": true
@@ -894,19 +819,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "workflow_run_id": {
-          "name": "workflow_run_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "shared_payload": {
-          "name": "shared_payload",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'{}'::jsonb"
-        },
         "start_date": {
           "name": "start_date",
           "type": "date",
@@ -918,38 +830,6 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
-        },
-        "contract_status": {
-          "name": "contract_status",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "monthly_price_eur": {
-          "name": "monthly_price_eur",
-          "type": "numeric(14, 2)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "bridge": {
-          "name": "bridge",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
         }
       },
       "indexes": {
@@ -964,9 +844,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "service_orders_unit_idx": {
           "name": "service_orders_unit_idx",
@@ -979,9 +859,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "service_orders_party_idx": {
           "name": "service_orders_party_idx",
@@ -994,24 +874,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
-        },
-        "service_orders_partner_idx": {
-          "name": "service_orders_partner_idx",
-          "columns": [
-            {
-              "expression": "partner_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "service_orders_consent_idx": {
           "name": "service_orders_consent_idx",
@@ -1024,109 +889,75 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "service_orders_unit_id_units_id_fk": {
           "name": "service_orders_unit_id_units_id_fk",
           "tableFrom": "service_orders",
-          "tableTo": "units",
           "columnsFrom": [
             "unit_id"
           ],
+          "tableTo": "units",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         },
         "service_orders_party_id_parties_id_fk": {
           "name": "service_orders_party_id_parties_id_fk",
           "tableFrom": "service_orders",
-          "tableTo": "parties",
           "columnsFrom": [
             "party_id"
           ],
+          "tableTo": "parties",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "service_orders_workflow_run_id_workflow_runs_id_fk": {
-          "name": "service_orders_workflow_run_id_workflow_runs_id_fk",
-          "tableFrom": "service_orders",
-          "tableTo": "workflow_runs",
-          "columnsFrom": [
-            "workflow_run_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         },
         "service_orders_offer_partner_fk": {
           "name": "service_orders_offer_partner_fk",
           "tableFrom": "service_orders",
-          "tableTo": "partner_offers",
           "columnsFrom": [
             "offer_id",
             "partner_id"
           ],
+          "tableTo": "partner_offers",
           "columnsTo": [
             "id",
             "partner_id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         },
         "service_orders_consent_party_partner_fk": {
           "name": "service_orders_consent_party_partner_fk",
           "tableFrom": "service_orders",
-          "tableTo": "consents",
           "columnsFrom": [
             "consent_id",
             "party_id",
             "partner_id"
           ],
+          "tableTo": "consents",
           "columnsTo": [
             "id",
             "party_id",
             "partner_id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "service_orders_workflow_run_key": {
-          "name": "service_orders_workflow_run_key",
-          "nullsNotDistinct": false,
-          "columns": [
-            "workflow_run_id"
-          ]
-        }
-      },
+      "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {
-        "service_orders_status_known": {
-          "name": "service_orders_status_known",
-          "value": "\"service_orders\".\"status\" IN ('sent', 'accepted', 'scheduled', 'active', 'rejected')"
-        },
-        "service_orders_contract_status_known": {
-          "name": "service_orders_contract_status_known",
-          "value": "\"service_orders\".\"contract_status\" IN ('signed', 'active', 'cancelled')"
-        },
-        "service_orders_price_nonnegative": {
-          "name": "service_orders_price_nonnegative",
-          "value": "\"service_orders\".\"monthly_price_eur\" >= 0 AND \"service_orders\".\"monthly_price_eur\" <> 'NaN'::numeric"
-        }
-      },
+      "checkConstraints": {},
       "isRLSEnabled": true
     },
     "public.assets": {
@@ -1183,9 +1014,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "assets_unit_idx": {
           "name": "assets_unit_idx",
@@ -1198,52 +1029,52 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "assets_building_property_fk": {
           "name": "assets_building_property_fk",
           "tableFrom": "assets",
-          "tableTo": "buildings",
           "columnsFrom": [
             "building_id",
             "property_id"
           ],
+          "tableTo": "buildings",
           "columnsTo": [
             "id",
             "property_id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         },
         "assets_unit_building_fk": {
           "name": "assets_unit_building_fk",
           "tableFrom": "assets",
-          "tableTo": "units",
           "columnsFrom": [
             "unit_id",
             "building_id"
           ],
+          "tableTo": "units",
           "columnsTo": [
             "id",
             "building_id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "assets_id_property_key": {
           "name": "assets_id_property_key",
-          "nullsNotDistinct": false,
           "columns": [
             "id",
             "property_id"
-          ]
+          ],
+          "nullsNotDistinct": false
         }
       },
       "policies": {},
@@ -1298,35 +1129,35 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "buildings_property_id_properties_id_fk": {
           "name": "buildings_property_id_properties_id_fk",
           "tableFrom": "buildings",
-          "tableTo": "properties",
           "columnsFrom": [
             "property_id"
           ],
+          "tableTo": "properties",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "buildings_id_property_key": {
           "name": "buildings_id_property_key",
-          "nullsNotDistinct": false,
           "columns": [
             "id",
             "property_id"
-          ]
+          ],
+          "nullsNotDistinct": false
         }
       },
       "policies": {},
@@ -1368,37 +1199,37 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "lease_parties_lease_id_leases_id_fk": {
           "name": "lease_parties_lease_id_leases_id_fk",
           "tableFrom": "lease_parties",
-          "tableTo": "leases",
           "columnsFrom": [
             "lease_id"
           ],
+          "tableTo": "leases",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         },
         "lease_parties_party_id_parties_id_fk": {
           "name": "lease_parties_party_id_parties_id_fk",
           "tableFrom": "lease_parties",
-          "tableTo": "parties",
           "columnsFrom": [
             "party_id"
           ],
+          "tableTo": "parties",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -1470,24 +1301,24 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "leases_unit_id_units_id_fk": {
           "name": "leases_unit_id_units_id_fk",
           "tableFrom": "leases",
-          "tableTo": "units",
           "columnsFrom": [
             "unit_id"
           ],
+          "tableTo": "units",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -1553,9 +1384,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "mandates_party_idx": {
           "name": "mandates_party_idx",
@@ -1568,37 +1399,37 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "mandates_property_id_properties_id_fk": {
           "name": "mandates_property_id_properties_id_fk",
           "tableFrom": "mandates",
-          "tableTo": "properties",
           "columnsFrom": [
             "property_id"
           ],
+          "tableTo": "properties",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         },
         "mandates_party_id_parties_id_fk": {
           "name": "mandates_party_id_parties_id_fk",
           "tableFrom": "mandates",
-          "tableTo": "parties",
           "columnsFrom": [
             "party_id"
           ],
+          "tableTo": "parties",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -1654,24 +1485,24 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "meters_unit_id_units_id_fk": {
           "name": "meters_unit_id_units_id_fk",
           "tableFrom": "meters",
-          "tableTo": "units",
           "columnsFrom": [
             "unit_id"
           ],
+          "tableTo": "units",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -1727,37 +1558,37 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "ownerships_party_id_parties_id_fk": {
           "name": "ownerships_party_id_parties_id_fk",
           "tableFrom": "ownerships",
-          "tableTo": "parties",
           "columnsFrom": [
             "party_id"
           ],
+          "tableTo": "parties",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         },
         "ownerships_unit_id_units_id_fk": {
           "name": "ownerships_unit_id_units_id_fk",
           "tableFrom": "ownerships",
-          "tableTo": "units",
           "columnsFrom": [
             "unit_id"
           ],
+          "tableTo": "units",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -1858,24 +1689,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "street": {
-          "name": "street",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "postcode": {
-          "name": "postcode",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "city": {
-          "name": "city",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
         "is_weg": {
           "name": "is_weg",
           "type": "boolean",
@@ -1944,44 +1757,44 @@
         "units_building_property_fk": {
           "name": "units_building_property_fk",
           "tableFrom": "units",
-          "tableTo": "buildings",
           "columnsFrom": [
             "building_id",
             "property_id"
           ],
+          "tableTo": "buildings",
           "columnsTo": [
             "id",
             "property_id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "units_id_building_key": {
           "name": "units_id_building_key",
-          "nullsNotDistinct": false,
           "columns": [
             "id",
             "building_id"
-          ]
+          ],
+          "nullsNotDistinct": false
         },
         "units_id_property_key": {
           "name": "units_id_property_key",
-          "nullsNotDistinct": false,
           "columns": [
             "id",
             "property_id"
-          ]
+          ],
+          "nullsNotDistinct": false
         },
         "units_building_identifier_key": {
           "name": "units_building_identifier_key",
-          "nullsNotDistinct": false,
           "columns": [
             "building_id",
             "identifier"
-          ]
+          ],
+          "nullsNotDistinct": false
         }
       },
       "policies": {},
@@ -2020,44 +1833,12 @@
           "primaryKey": false,
           "notNull": true
         },
-        "actor": {
-          "name": "actor",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'system'"
-        },
-        "from_state": {
-          "name": "from_state",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "to_state": {
-          "name": "to_state",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
         "details": {
           "name": "details",
           "type": "jsonb",
           "primaryKey": false,
           "notNull": true,
           "default": "'{}'::jsonb"
-        },
-        "cost_eur": {
-          "name": "cost_eur",
-          "type": "numeric(12, 4)",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'0'"
-        },
-        "idempotency_key": {
-          "name": "idempotency_key",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
         },
         "occurred_at": {
           "name": "occurred_at",
@@ -2084,43 +1865,30 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "audit_events_workflow_run_id_workflow_runs_id_fk": {
           "name": "audit_events_workflow_run_id_workflow_runs_id_fk",
           "tableFrom": "audit_events",
-          "tableTo": "workflow_runs",
           "columnsFrom": [
             "workflow_run_id"
           ],
+          "tableTo": "workflow_runs",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "audit_events_idempotency_key": {
-          "name": "audit_events_idempotency_key",
-          "nullsNotDistinct": false,
-          "columns": [
-            "idempotency_key"
-          ]
-        }
-      },
+      "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {
-        "audit_events_cost_nonnegative": {
-          "name": "audit_events_cost_nonnegative",
-          "value": "\"audit_events\".\"cost_eur\" >= 0 AND \"audit_events\".\"cost_eur\" <> 'NaN'::numeric"
-        }
-      },
+      "checkConstraints": {},
       "isRLSEnabled": true
     },
     "public.conversations": {
@@ -2172,24 +1940,24 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "conversations_workflow_run_id_workflow_runs_id_fk": {
           "name": "conversations_workflow_run_id_workflow_runs_id_fk",
           "tableFrom": "conversations",
-          "tableTo": "workflow_runs",
           "columnsFrom": [
             "workflow_run_id"
           ],
+          "tableTo": "workflow_runs",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -2220,13 +1988,6 @@
           "type": "uuid",
           "primaryKey": false,
           "notNull": false
-        },
-        "role": {
-          "name": "role",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'system'"
         },
         "content": {
           "name": "content",
@@ -2259,9 +2020,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "messages_sender_idx": {
           "name": "messages_sender_idx",
@@ -2274,48 +2035,43 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "messages_conversation_id_conversations_id_fk": {
           "name": "messages_conversation_id_conversations_id_fk",
           "tableFrom": "messages",
-          "tableTo": "conversations",
           "columnsFrom": [
             "conversation_id"
           ],
+          "tableTo": "conversations",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         },
         "messages_sender_party_id_parties_id_fk": {
           "name": "messages_sender_party_id_parties_id_fk",
           "tableFrom": "messages",
-          "tableTo": "parties",
           "columnsFrom": [
             "sender_party_id"
           ],
+          "tableTo": "parties",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {
-        "messages_role_known": {
-          "name": "messages_role_known",
-          "value": "\"messages\".\"role\" IN ('agent', 'tenant', 'system', 'partner')"
-        }
-      },
+      "checkConstraints": {},
       "isRLSEnabled": true
     },
     "public.workflow_runs": {
@@ -2341,18 +2097,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "partner_id": {
-          "name": "partner_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "offer_id": {
-          "name": "offer_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
         "state": {
           "name": "state",
           "type": "text",
@@ -2365,26 +2109,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'[]'::jsonb"
-        },
-        "offer": {
-          "name": "offer",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
         }
       },
       "indexes": {
@@ -2399,9 +2123,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "workflow_runs_case_idx": {
           "name": "workflow_runs_case_idx",
@@ -2414,109 +2138,52 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
-        },
-        "workflow_runs_partner_idx": {
-          "name": "workflow_runs_partner_idx",
-          "columns": [
-            {
-              "expression": "partner_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "workflow_runs_event_id_events_id_fk": {
           "name": "workflow_runs_event_id_events_id_fk",
           "tableFrom": "workflow_runs",
-          "tableTo": "events",
           "columnsFrom": [
             "event_id"
           ],
+          "tableTo": "events",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         },
         "workflow_runs_case_id_cases_id_fk": {
           "name": "workflow_runs_case_id_cases_id_fk",
           "tableFrom": "workflow_runs",
-          "tableTo": "cases",
           "columnsFrom": [
             "case_id"
           ],
+          "tableTo": "cases",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "workflow_runs_partner_id_partners_id_fk": {
-          "name": "workflow_runs_partner_id_partners_id_fk",
-          "tableFrom": "workflow_runs",
-          "tableTo": "partners",
-          "columnsFrom": [
-            "partner_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "workflow_runs_offer_partner_fk": {
-          "name": "workflow_runs_offer_partner_fk",
-          "tableFrom": "workflow_runs",
-          "tableTo": "partner_offers",
-          "columnsFrom": [
-            "offer_id",
-            "partner_id"
-          ],
-          "columnsTo": [
-            "id",
-            "partner_id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "workflow_runs_event_partner_key": {
-          "name": "workflow_runs_event_partner_key",
-          "nullsNotDistinct": false,
-          "columns": [
-            "event_id",
-            "partner_id"
-          ]
-        }
-      },
+      "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {
-        "workflow_runs_state_known": {
-          "name": "workflow_runs_state_known",
-          "value": "\"workflow_runs\".\"state\" IN ('detected', 'offer_sent', 'consent_given', 'ordered', 'confirmed', 'active', 'closed', 'no_eligible_offer', 'declined', 'rejected')"
-        }
-      },
+      "checkConstraints": {},
       "isRLSEnabled": true
     }
   },
   "enums": {},
   "schemas": {},
+  "views": {},
   "sequences": {},
   "roles": {},
   "policies": {},
-  "views": {},
   "_meta": {
     "columns": {},
     "schemas": {},

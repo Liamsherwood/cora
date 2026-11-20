@@ -1,46 +1,49 @@
-# Next.js template
+# Cora
 
-This is a Next.js template with shadcn/ui.
-
-## Database
-
-The app uses PostgreSQL for application records and Drizzle for typed SQL and
-versioned migrations. The schema lives in [`lib/db/schema`](lib/db/schema).
-Import `getDb()` from `@/lib/db` in server-side data access code and import tables
-from `@/lib/db/schema` to build queries.
-
-### Local development
+## Local development
 
 Install Git and Node.js 24, and make sure you have access to the Cora repository.
+Each teammate runs Supabase locally with Docker. Local development requires no
+Supabase account, paid plan, or shared credentials.
 
-For the current starter UI, clone the repo, run `npm ci`, then run `npm run dev`.
-Follow the steps below when you need local PostgreSQL, Auth, or Storage.
-
-#### Start Docker
+### 1. Start Docker
 
 Install and open Docker Desktop, or run `colima start` if you use Colima on
 macOS. Wait for Docker to start, then run `docker info` to check that it is ready.
 [Docker installation guide](https://docs.docker.com/get-docker/)
 
-#### Clone and start Supabase
+### 2. Clone the repo and start Supabase
 
-From a terminal, run the commands below. `npx` runs the Supabase CLI at the
-specified version. The local stack starts without a Supabase sign-in.
-[Supabase CLI guide](https://supabase.com/docs/guides/local-development/cli/getting-started)
+Run these commands from a terminal. The first Supabase startup downloads the
+Docker images. [Supabase CLI guide](https://supabase.com/docs/guides/local-development/cli/getting-started)
 
 ```bash
 git clone https://github.com/Liamsherwood/cora.git
 cd cora
 npm ci
-cp .env.example .env.local
 npx --yes supabase@2.114.0 start
 ```
 
-Copy the **Publishable** key printed by Supabase into
-`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in `.env.local`. Run
-`npx --yes supabase@2.114.0 status` to see the key again.
+### 3. Set up environment variables
 
-#### Migrate and run the app
+On a fresh checkout, copy the tracked template to the gitignored local file.
+
+```bash
+cp .env.example .env.local
+```
+
+| Variable | Local value |
+| --- | --- |
+| `DATABASE_URL` | Local PostgreSQL connection string, already set in the template. |
+| `NEXT_PUBLIC_SUPABASE_URL` | Local Supabase API URL, already set in the template. |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Paste the **Publishable** key printed by your local Supabase CLI. |
+
+Run `npx --yes supabase@2.114.0 status` to see the local key again. Leave
+`DATABASE_URL_UNPOOLED` and `SUPABASE_DB_CA_CERT` unset for the default local
+setup. Use `.env.example` to share variable names and local defaults. Keep secret
+values in your gitignored `.env.local` or in Vercel for hosted deployments.
+
+### 4. Migrate and run the app
 
 ```bash
 npm run db:migrate
@@ -54,7 +57,8 @@ partners in `data/partners/`. It does nothing if data already exists; use
 
 Open [Cora](http://localhost:3000) or [Supabase Studio](http://127.0.0.1:64323).
 The local stack includes Auth and a private `documents` storage bucket. Drizzle
-manages the application migrations in `drizzle/`.
+manages the application migrations in `drizzle/`. Run `npm run db:migrate` again
+after pulling changes that include new Drizzle migrations.
 
 To stop the local Supabase services, run `npx --yes supabase@2.114.0 stop`.
 
@@ -91,6 +95,50 @@ npm test
 Runs against `TEST_DATABASE_URL`. Every run drops and re-migrates that
 database's schema, so its name must end in `_test`; the setup refuses anything
 else and creates the database if it is missing.
+
+## WhatsApp agent
+
+Cora replies to inbound text about property management and keeps up to four
+recent exchanges per conversation for context. Replies use Vercel AI Gateway.
+The pilot handles conversation only. Case creation and staff handoff remain
+manual.
+
+1. Open your Meta app and go to **WhatsApp → API Setup** (or **Use cases →
+   Customize → API Setup**). Select the sender number and copy its **Phone Number
+   ID** into `WHATSAPP_PHONE_NUMBER_ID`. Use a temporary **Access token** in
+   `WHATSAPP_ACCESS_TOKEN` for a quick test, or use a system user access token
+   with `whatsapp_business_messaging` and access to the WhatsApp account for an
+   ongoing deployment. For a Meta test number, add your phone as a test
+   recipient. If you only verified ownership of your own business number, check
+   its [Cloud API registration](https://developers.facebook.com/documentation/business-messaging/whatsapp/business-phone-numbers/registration).
+   [Meta Cloud API setup](https://developers.facebook.com/documentation/business-messaging/whatsapp/get-started)
+2. Copy the **App secret** from **App settings → Basic** into
+   `WHATSAPP_APP_SECRET`. Generate a separate verification token with
+   `openssl rand -hex 32` and save it as `WHATSAPP_VERIFY_TOKEN`. Put these
+   values in the gitignored `.env.local` for local use or in Vercel’s
+   server-side environment variables for the deployment that will receive the
+   callback.
+3. Run `npm run db:migrate` against the intended database before running or
+   deploying the agent. Use the hosted migration command below for hosted
+   Supabase. AI Gateway uses Vercel OIDC on a linked deployment. For local
+   development, use a current OIDC token or supply `AI_GATEWAY_API_KEY`.
+   [AI Gateway authentication](https://vercel.com/docs/ai-gateway/authentication)
+4. In Meta, open **WhatsApp → Configuration** (or **Use cases → Customize →
+   Configuration**). Set the callback URL to
+   `https://<public-cora-host>/api/webhooks/whatsapp`. The URL must be reachable
+   by Meta over HTTPS without a login. Enter the same `WHATSAPP_VERIFY_TOKEN`,
+   click **Verify and save**, and subscribe to the `messages` field.
+   [Meta webhook setup](https://developers.facebook.com/documentation/business-messaging/whatsapp/webhooks/create-webhook-endpoint)
+5. From your own WhatsApp account, send the business number a text such as
+   “My kitchen tap is leaking.” Cora should reply with a follow-up question.
+   Reply with another detail to test conversation context.
+
+## Database
+
+Cora uses PostgreSQL and Drizzle for typed SQL and versioned migrations. The
+schema lives in `lib/db/schema` and migrations live in `drizzle/`. Import
+`getDb()` from `@/lib/db` in server-side data access code and import tables from
+`@/lib/db/schema` to build queries. [Database schema](lib/db/schema)
 
 ### Hosted Supabase on Vercel
 
