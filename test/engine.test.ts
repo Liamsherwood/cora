@@ -3,8 +3,11 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest"
 
 import type { DB } from "@/lib/db"
 import * as t from "@/lib/db/schema"
+import { getUnitSnapshot } from "@/lib/centrix/repository"
 import { loadManifestFiles, registerPartner } from "@/lib/connectors/registry"
 import { newId } from "@/lib/ids"
+import { partnerSecret, sign } from "@/lib/partner/signature"
+import { handlePartnerWebhook } from "@/lib/partner/webhook"
 import {
   acceptOffer,
   applyPartnerStatus,
@@ -250,6 +253,33 @@ describe("partner isolation", () => {
     expect((await getRunView(db, run.id)).run.state).toBe("ordered")
   })
 
+  it("a partner's webhook secret can't sign for another partner", async () => {
+    process.env.PARTNER_WEBHOOK_SECRET = "test-master-key"
+    expect(partnerSecret("example_fibre")).not.toBe(
+      partnerSecret("stadtwerk_energy")
+    )
+    const run = await offeredRun("stadtwerk_energy")
+    const { order_id } = await acceptOffer(db, run.id, { channel: "portal" })
+    const body = JSON.stringify(status(order_id, "accepted"))
+    // Signed with example_fibre's secret, sent to stadtwerk_energy's webhook.
+    await expectAppError(
+      handlePartnerWebhook(
+        db,
+        "stadtwerk_energy",
+        body,
+        sign(partnerSecret("example_fibre"), body)
+      ),
+      401
+    )
+    await handlePartnerWebhook(
+      db,
+      "stadtwerk_energy",
+      body,
+      sign(partnerSecret("stadtwerk_energy"), body)
+    )
+    expect((await ordersOf(run.id))[0]!.status).toBe("accepted")
+  })
+
   it("a partner can't send a status it did not declare", async () => {
     const run = await offeredRun("stadtwerk_energy")
     const { order_id } = await acceptOffer(db, run.id, { channel: "portal" })
@@ -347,5 +377,41 @@ describe("guards", () => {
     expect((order!.sharedPayload as Record<string, unknown>).move_in_date).toBe(
       "2026-12-15"
     )
+  })
+})
+
+describe("contract on the unit", () => {
+  it("a rejection after acceptance cancels the signed contract", async () => {
+    const run = await offeredRun()
+    const { order_id } = await acceptOffer(db, run.id, { channel: "portal" })
+    await applyPartnerStatus(db, "example_fibre", status(order_id, "accepted"))
+    expect(
+      (await getUnitSnapshot(db, UNIT_4B)).service_contracts.map(
+        (c) => c.status
+      )
+    ).toEqual(["signed"])
+
+    await applyPartnerStatus(
+      db,
+      "example_fibre",
+      status(order_id, "rejected", { note: "Address not serviceable" })
+    )
+    const [order] = await ordersOf(run.id)
+    expect(order!.contractStatus).toBe("cancelled")
+    expect(order!.bridge).toBeNull()
+    expect((await getRunView(db, run.id)).run.state).toBe("rejected")
+    expect(
+      (await getUnitSnapshot(db, UNIT_4B)).service_contracts.map(
+        (c) => c.status
+      )
+    ).toEqual(["cancelled"])
+  })
+
+  it("a rejection before acceptance leaves no contract", async () => {
+    const run = await offeredRun()
+    const { order_id } = await acceptOffer(db, run.id, { channel: "portal" })
+    await applyPartnerStatus(db, "example_fibre", status(order_id, "rejected"))
+    expect((await ordersOf(run.id))[0]!.contractStatus).toBeNull()
+    expect((await getUnitSnapshot(db, UNIT_4B)).service_contracts).toEqual([])
   })
 })

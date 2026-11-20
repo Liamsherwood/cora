@@ -1,4 +1,14 @@
-import { and, asc, desc, eq, gte, isNotNull, isNull, or } from "drizzle-orm"
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gte,
+  isNotNull,
+  isNull,
+  lte,
+  or,
+} from "drizzle-orm"
 
 import type { Exec } from "@/lib/db"
 import * as t from "@/lib/db/schema"
@@ -94,8 +104,11 @@ export async function getUnitSnapshot(
       .from(t.ownerships)
       .innerJoin(t.parties, eq(t.ownerships.partyId, t.parties.id))
       .where(
+        // Current owner: ownership has started and not yet ended (a sale that takes
+        // effect later doesn't change today's owner).
         and(
           eq(t.ownerships.unitId, unitId),
+          lte(t.ownerships.validFrom, today),
           or(isNull(t.ownerships.validTo), gte(t.ownerships.validTo, today))
         )
       )

@@ -2,20 +2,15 @@
  * Seeds the database in DATABASE_URL from data/seed.json + data/partners/*.json.
  *
  *   npm run db:migrate          # create tables
- *   npm run db:seed             # load demo data (skipped if data already exists)
- *   npm run db:seed -- --reset  # wipe all rows first
+ *   npm run db:seed             # write the seed rows (idempotent upsert) and partners
+ *   npm run db:seed -- --reset  # also clear the demo's workflows on the seed units
  *
  * Runs with the react-server condition so lib/db's "server-only" guard resolves.
  */
 import nextEnv from "@next/env"
 
 import { connect } from "@/lib/db"
-import {
-  readSeedFile,
-  seedDatabase,
-  seedIfEmpty,
-  wipeDatabase,
-} from "@/lib/seed"
+import { readSeedFile, resetDemoData, seedDatabase } from "@/lib/seed"
 
 nextEnv.loadEnvConfig(process.cwd(), process.env.NODE_ENV !== "production")
 
@@ -24,17 +19,13 @@ async function main() {
   if (!url) throw new Error("Set DATABASE_URL (see .env.example).")
   const db = connect(url, 1)
   try {
+    const data = await readSeedFile()
     if (process.argv.includes("--reset")) {
-      await wipeDatabase(db)
-      await seedDatabase(db, await readSeedFile())
-      console.log("Database wiped and re-seeded.")
+      await resetDemoData(db, data)
+      console.log("Demo workflows cleared and seed data restored.")
     } else {
-      const seeded = await seedIfEmpty(db)
-      console.log(
-        seeded
-          ? "Seeded demo data."
-          : "Data already present, nothing seeded (use -- --reset to start over)."
-      )
+      await seedDatabase(db, data)
+      console.log("Seed data written.")
     }
   } finally {
     await db.$client.end()
