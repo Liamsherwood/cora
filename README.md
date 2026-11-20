@@ -9,21 +9,49 @@ versioned migrations. The schema lives in [`lib/db/schema`](lib/db/schema).
 Import `getDb()` from `@/lib/db` in server-side data access code and import tables
 from `@/lib/db/schema` to build queries.
 
-### Local Supabase
+### Local development
 
-Start Docker or Colima, then use the Supabase CLI to start the services. The
-project uses ports in the `64320` range so it can run alongside a project using
-the default ports. Copy `.env.example` to `.env.local` if you need local settings.
+Install Git and Node.js 24, and make sure you have access to the Cora repository.
+
+For the current starter UI, clone the repo, run `npm ci`, then run `npm run dev`.
+Follow the steps below when you need local PostgreSQL, Auth, or Storage.
+
+#### Start Docker
+
+Install and open Docker Desktop, or run `colima start` if you use Colima on
+macOS. Wait for Docker to start, then run `docker info` to check that it is ready.
+[Docker installation guide](https://docs.docker.com/get-docker/)
+
+#### Clone and start Supabase
+
+From a terminal, run the commands below. `npx` runs the Supabase CLI at the
+specified version. The local stack starts without a Supabase sign-in.
+[Supabase CLI guide](https://supabase.com/docs/guides/local-development/cli/getting-started)
 
 ```bash
-supabase start
-npm run db:migrate
+git clone https://github.com/Liamsherwood/cora.git
+cd cora
+npm ci
+cp .env.example .env.local
+npx --yes supabase@2.114.0 start
 ```
 
-Supabase Studio is available at `http://127.0.0.1:64323`. The local stack includes
-Auth and a private `documents` storage bucket. Drizzle manages the application
-migrations in `drizzle/`. Set `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in
-`.env.local` to the publishable key shown by `supabase status`.
+Copy the **Publishable** key printed by Supabase into
+`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in `.env.local`. Run
+`npx --yes supabase@2.114.0 status` to see the key again.
+
+#### Migrate and run the app
+
+```bash
+npm run db:migrate
+npm run dev
+```
+
+Open [Cora](http://localhost:3000) or [Supabase Studio](http://127.0.0.1:64323).
+The local stack includes Auth and a private `documents` storage bucket. Drizzle
+manages the application migrations in `drizzle/`.
+
+To stop the local Supabase services, run `npx --yes supabase@2.114.0 stop`.
 
 ### Hosted Supabase on Vercel
 
