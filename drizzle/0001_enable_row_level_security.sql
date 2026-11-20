@@ -1,0 +1,22 @@
+ALTER TABLE "cases" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "documents" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "events" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "work_orders" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "consents" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "partner_offers" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "partners" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "service_orders" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "assets" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "buildings" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "lease_parties" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "leases" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "mandates" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "meters" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "ownerships" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "parties" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "properties" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "units" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "audit_events" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "conversations" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "messages" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "workflow_runs" ENABLE ROW LEVEL SECURITY;

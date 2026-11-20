@@ -1,0 +1,46 @@
+project_id = "cora"
+
+[api]
+enabled = true
+port = 64321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+
+[db]
+port = 64322
+shadow_port = 64320
+major_version = 17
+
+# Drizzle manages the application schema in drizzle/.
+[db.migrations]
+enabled = false
+
+[db.seed]
+enabled = false
+
+[studio]
+enabled = true
+port = 64323
+
+[local_smtp]
+enabled = true
+port = 64324
+
+[storage]
+enabled = true
+
+[storage.buckets.documents]
+public = false
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["http://127.0.0.1:3000"]
+
+[analytics]
+enabled = true
+port = 64327
+
+[edge_runtime]
+enabled = true
+inspector_port = 64328

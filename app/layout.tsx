@@ -1,3 +1,4 @@
+import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Geist, Geist_Mono, Instrument_Sans } from "next/font/google"
 
 import "./globals.css"
@@ -24,6 +25,7 @@ export default function RootLayout({
     >
       <body>
         <ThemeProvider>{children}</ThemeProvider>
+        <SpeedInsights />
       </body>
     </html>
   )
