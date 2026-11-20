@@ -1,6 +1,6 @@
 {
-  "id": "48838fa0-4de4-4b1d-a8c7-db2b05a24373",
-  "prevId": "b979fdab-57bf-464a-b111-9288a83c0148",
+  "id": "b979fdab-57bf-464a-b111-9288a83c0148",
+  "prevId": "61dc91c6-86f2-4e6c-bb8a-54e5e9784686",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -708,8 +708,8 @@
           "primaryKey": false,
           "notNull": false
         },
-        "lead_time_business_days": {
-          "name": "lead_time_business_days",
+        "lead_time_days": {
+          "name": "lead_time_days",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
@@ -777,7 +777,7 @@
       "checkConstraints": {
         "partner_offers_lead_time_nonnegative": {
           "name": "partner_offers_lead_time_nonnegative",
-          "value": "\"partner_offers\".\"lead_time_business_days\" >= 0"
+          "value": "\"partner_offers\".\"lead_time_days\" >= 0"
         },
         "partner_offers_price_nonnegative": {
           "name": "partner_offers_price_nonnegative",

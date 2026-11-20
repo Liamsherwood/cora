@@ -19,15 +19,22 @@
     {
       "idx": 2,
       "version": "7",
-      "when": 1795202122547,
-      "tag": "0002_partner_connect",
+      "when": 1795201719324,
+      "tag": "0002_whatsapp_chat_state",
       "breakpoints": true
     },
     {
       "idx": 3,
       "version": "7",
+      "when": 1795202122547,
+      "tag": "0003_partner_connect",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
       "when": 1795202134230,
-      "tag": "0003_rename_lead_time_business_days",
+      "tag": "0004_rename_lead_time_business_days",
       "breakpoints": true
     }
   ]
