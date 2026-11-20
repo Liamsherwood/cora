@@ -1,0 +1,45 @@
+{
+  "properties": [
+    { "id": "prop_muster12", "name": "Musterstraße 12", "street": "Musterstraße 12", "postcode": "52062", "city": "Aachen", "is_weg": true }
+  ],
+  "buildings": [
+    { "id": "bld_muster12", "property_id": "prop_muster12", "building_year": 1972, "heating_type": "gas central heating", "energy_class": "E", "energy_certificate_valid_until": "2029-03-31" }
+  ],
+  "units": [
+    { "id": "unit_4b", "building_id": "bld_muster12", "identifier": "4B", "floor": 2, "size_sqm": 68, "rooms": 3 },
+    { "id": "unit_2a", "building_id": "bld_muster12", "identifier": "2A", "floor": 1, "size_sqm": 54, "rooms": 2 },
+    { "id": "unit_5c", "building_id": "bld_muster12", "identifier": "5C", "floor": 3, "size_sqm": 82, "rooms": 4 }
+  ],
+  "parties": [
+    { "id": "c_101", "type": "person", "name": "Maria Becker", "email": "maria.becker@example.com", "phone": "+49 151 00000101", "whatsapp_opt_in": false, "language": "de" },
+    { "id": "c_202", "type": "person", "name": "Lena Hoffmann", "email": "lena@example.com", "phone": "+49 151 00000000", "whatsapp_opt_in": true, "language": "de" },
+    { "id": "c_203", "type": "person", "name": "Jonas Weber", "email": "jonas.weber@example.com", "phone": "+49 151 00000203", "whatsapp_opt_in": true, "language": "en" },
+    { "id": "c_301", "type": "organization", "name": "Heizung Schmitz GmbH", "email": "auftrag@heizung-schmitz.example", "phone": "+49 241 0000301", "whatsapp_opt_in": false, "language": "de" }
+  ],
+  "ownerships": [
+    { "party_id": "c_101", "unit_id": "unit_4b", "mea_share": "68.5", "valid_from": "2015-06-01", "valid_to": null },
+    { "party_id": "c_101", "unit_id": "unit_2a", "mea_share": "54.2", "valid_from": "2015-06-01", "valid_to": null }
+  ],
+  "leases": [
+    { "id": "lease_4b_2026", "unit_id": "unit_4b", "rent_cold_cents": 78000, "start_date": "2026-12-01", "end_date": null },
+    { "id": "lease_2a_2023", "unit_id": "unit_2a", "rent_cold_cents": 61000, "start_date": "2023-03-01", "end_date": null }
+  ],
+  "lease_parties": [
+    { "lease_id": "lease_4b_2026", "party_id": "c_202", "role": "tenant" },
+    { "lease_id": "lease_2a_2023", "party_id": "c_203", "role": "tenant" }
+  ],
+  "mandates": [
+    { "id": "mandate_weg_muster12", "property_id": "prop_muster12", "grantor_party_id": null, "type": "weg", "approval_limit_cents": 50000 },
+    { "id": "mandate_rental_becker", "property_id": "prop_muster12", "grantor_party_id": "c_101", "type": "rental", "approval_limit_cents": 30000 }
+  ],
+  "assets": [
+    { "id": "asset_boiler_central", "building_id": "bld_muster12", "unit_id": null, "asset_type": "gas central boiler", "ownership_scope": "common" }
+  ],
+  "meters": [
+    { "id": "meter_4b_el", "unit_id": "unit_4b", "type": "electricity", "number": "1ESY1160123456" },
+    { "id": "meter_2a_el", "unit_id": "unit_2a", "type": "electricity", "number": "1ESY1160654321" }
+  ],
+  "cases": [],
+  "work_orders": [],
+  "documents": []
+}
