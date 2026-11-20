@@ -1,57 +1,71 @@
-# Next.js template
+# Cora
 
-This is a Next.js template with shadcn/ui.
-
-## Database
-
-The app uses PostgreSQL for application records and Drizzle for typed SQL and
-versioned migrations. The schema lives in [`lib/db/schema`](lib/db/schema).
-Import `getDb()` from `@/lib/db` in server-side data access code and import tables
-from `@/lib/db/schema` to build queries.
-
-### Local development
+## Local development
 
 Install Git and Node.js 24, and make sure you have access to the Cora repository.
+Each teammate runs Supabase locally with Docker. Local development requires no
+Supabase account, paid plan, or shared credentials.
 
-For the current starter UI, clone the repo, run `npm ci`, then run `npm run dev`.
-Follow the steps below when you need local PostgreSQL, Auth, or Storage.
-
-#### Start Docker
+### 1. Start Docker
 
 Install and open Docker Desktop, or run `colima start` if you use Colima on
 macOS. Wait for Docker to start, then run `docker info` to check that it is ready.
 [Docker installation guide](https://docs.docker.com/get-docker/)
 
-#### Clone and start Supabase
+### 2. Clone the repo and start Supabase
 
-From a terminal, run the commands below. `npx` runs the Supabase CLI at the
-specified version. The local stack starts without a Supabase sign-in.
-[Supabase CLI guide](https://supabase.com/docs/guides/local-development/cli/getting-started)
+Run these commands from a terminal. The first Supabase startup downloads the
+Docker images. [Supabase CLI guide](https://supabase.com/docs/guides/local-development/cli/getting-started)
 
 ```bash
 git clone https://github.com/Liamsherwood/cora.git
 cd cora
 npm ci
-cp .env.example .env.local
 npx --yes supabase@2.114.0 start
 ```
 
-Copy the **Publishable** key printed by Supabase into
-`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in `.env.local`. Run
-`npx --yes supabase@2.114.0 status` to see the key again.
+### 3. Set up environment variables
 
-#### Migrate and run the app
+On a fresh checkout, copy the tracked template to the gitignored local file.
+
+```bash
+cp .env.example .env.local
+```
+
+| Variable | Local value |
+| --- | --- |
+| `DATABASE_URL` | Local PostgreSQL connection string, already set in the template. |
+| `NEXT_PUBLIC_SUPABASE_URL` | Local Supabase API URL, already set in the template. |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Paste the **Publishable** key printed by your local Supabase CLI. |
+
+Run `npx --yes supabase@2.114.0 status` to see the local key again. Leave
+`DATABASE_URL_UNPOOLED` and `SUPABASE_DB_CA_CERT` unset for the default local
+setup. Use `.env.example` to share variable names and local defaults. Keep secret
+values in your gitignored `.env.local` or in Vercel for hosted deployments.
+
+### 4. Migrate and run the app
 
 ```bash
 npm run db:migrate
 npm run dev
 ```
 
-Open [Cora](http://localhost:3000) or [Supabase Studio](http://127.0.0.1:64323).
-The local stack includes Auth and a private `documents` storage bucket. Drizzle
-manages the application migrations in `drizzle/`.
+Open Cora at `http://localhost:3000`. Use Supabase Studio to inspect your local
+database. The local stack includes Auth and a private `documents` storage bucket.
+[Supabase Studio](http://127.0.0.1:64323)
+
+Run `npm run db:migrate` again after pulling changes that include new Drizzle
+migrations. A fresh database starts with empty application tables. For database
+testing, add fictional records to your local database in Supabase Studio.
 
 To stop the local Supabase services, run `npx --yes supabase@2.114.0 stop`.
+
+## Database
+
+Cora uses PostgreSQL and Drizzle for typed SQL and versioned migrations. The
+schema lives in `lib/db/schema` and migrations live in `drizzle/`. Import
+`getDb()` from `@/lib/db` in server-side data access code and import tables from
+`@/lib/db/schema` to build queries. [Database schema](lib/db/schema)
 
 ### Hosted Supabase on Vercel
 
