@@ -117,6 +117,96 @@ const SeedSchema = z.object({
       })
     )
     .default([]),
+  // History: repair and move cases, contractor jobs, case files and past events.
+  cases: z
+    .array(
+      z.object({
+        id,
+        property_id: id,
+        unit_id: id.nullish(),
+        reporter_party_id: id.nullish(),
+        asset_id: id.nullish(),
+        category: z.enum([
+          "heating",
+          "plumbing",
+          "electrical",
+          "internet",
+          "damp_mould",
+          "pests",
+          "appliance",
+          "elevator",
+          "access_keys",
+          "noise",
+          "move_in",
+          "move_out",
+          "other",
+        ]),
+        priority: z.enum(["low", "normal", "high", "emergency"]),
+        status: z.enum([
+          "open",
+          "triaged",
+          "scheduled",
+          "in_progress",
+          "resolved",
+          "closed",
+          "cancelled",
+        ]),
+      })
+    )
+    .default([]),
+  work_orders: z
+    .array(
+      z.object({
+        id,
+        case_id: id,
+        contractor_id: id,
+        scheduled_at: z.iso.datetime({ offset: true }).nullish(),
+        cost_estimate_eur: eur.nullish(),
+        payer: z.enum(["owner", "tenant", "weg", "insurance"]).nullish(),
+        status: z.enum([
+          "requested",
+          "accepted",
+          "scheduled",
+          "in_progress",
+          "completed",
+          "invoiced",
+          "cancelled",
+        ]),
+      })
+    )
+    .default([]),
+  documents: z
+    .array(
+      z.object({
+        id,
+        case_id: id,
+        type: z.enum([
+          "photo",
+          "quote",
+          "invoice",
+          "lease",
+          "handover_protocol",
+          "registration_confirmation",
+          "meter_photo",
+          "consent_record",
+        ]),
+        url: z.string().min(1),
+      })
+    )
+    .default([]),
+  events: z
+    .array(
+      z.object({
+        id,
+        // Dotted names like the connector triggers: tenant.move_in, case.created, ...
+        type: z.string().regex(/^[a-z_]+(\.[a-z_]+)+$/, "expected e.g. tenant.move_in"),
+        unit_id: id,
+        party_id: id.nullish(),
+        occurred_at: z.iso.datetime({ offset: true }),
+        payload: z.record(z.string(), z.unknown()).default({}),
+      })
+    )
+    .default([]),
 })
 
 export type SeedData = z.infer<typeof SeedSchema>
@@ -237,6 +327,51 @@ export async function seedDatabase(db: DB, data: SeedData): Promise<void> {
           unitId: m.unit_id,
           type: m.type,
           number: m.number,
+        }))
+      )
+    if (data.cases.length)
+      await tx.insert(t.cases).values(
+        data.cases.map((c) => ({
+          id: c.id,
+          propertyId: c.property_id,
+          unitId: n(c.unit_id),
+          reporterPartyId: n(c.reporter_party_id),
+          assetId: n(c.asset_id),
+          category: c.category,
+          priority: c.priority,
+          status: c.status,
+        }))
+      )
+    if (data.work_orders.length)
+      await tx.insert(t.workOrders).values(
+        data.work_orders.map((w) => ({
+          id: w.id,
+          caseId: w.case_id,
+          contractorId: w.contractor_id,
+          scheduledAt: w.scheduled_at ? new Date(w.scheduled_at) : null,
+          costEstimateEur: n(w.cost_estimate_eur),
+          payer: n(w.payer),
+          status: w.status,
+        }))
+      )
+    if (data.documents.length)
+      await tx.insert(t.documents).values(
+        data.documents.map((d) => ({
+          id: d.id,
+          caseId: d.case_id,
+          type: d.type,
+          url: d.url,
+        }))
+      )
+    if (data.events.length)
+      await tx.insert(t.events).values(
+        data.events.map((e) => ({
+          id: e.id,
+          type: e.type,
+          unitId: e.unit_id,
+          partyId: n(e.party_id),
+          occurredAt: new Date(e.occurred_at),
+          payload: e.payload,
         }))
       )
   })
