@@ -9,10 +9,12 @@ type Tool = {
   id: string
   tool_config: {
     name: string
+    description?: string
     api_schema?: {
       url: string
       request_headers?: Record<string, unknown>
       request_body_schema?: {
+        required?: string[]
         properties?: Record<string, Record<string, unknown>>
       }
     }
@@ -189,15 +191,45 @@ async function sync() {
           description: "Private unit or shared area.",
           enum: ticketClassification.shape.scope.options,
         },
-        description: {
+        title: {
           type: "string",
           description:
-            "Brief description in the resident’s language, without personal details.",
+            "English inbox title of 3 to 6 words naming the fault and where it is, e.g. “Kitchen tap leaking”. No names.",
         },
         summary: {
           type: "string",
           description:
-            "One English sentence for staff, without personal details.",
+            "One or two English sentences for staff with what they need to act, without personal details.",
+        },
+        description: {
+          type: "string",
+          description:
+            "The resident’s account in their language, without personal details.",
+        },
+        location: {
+          type: "string",
+          description:
+            "Where exactly, e.g. “kitchen, under the sink” or “stairwell, 2nd floor”. Omit if unknown.",
+        },
+        since: {
+          type: "string",
+          description:
+            "When it started or how long it has been going on. Omit if unknown.",
+        },
+        resident_actions: {
+          type: "string",
+          description:
+            "What the resident already did, e.g. “shut off the water under the sink”. Omit if nothing.",
+        },
+        safety_advice: {
+          type: "string",
+          description:
+            "Safety advice you gave during the call, in English. Omit if none.",
+        },
+        access: {
+          type: "string",
+          description:
+            "When someone can be let in, e.g. “weekdays after 17:00”. Never access codes. Omit if unknown.",
         },
       },
       required: [
@@ -206,8 +238,9 @@ async function sync() {
         "category",
         "priority",
         "scope",
-        "description",
+        "title",
         "summary",
+        "description",
       ],
     },
     {
@@ -255,7 +288,13 @@ async function sync() {
     const existing = candidates.find(
       ({ tool_config }) =>
         tool_config.name === tool.name &&
+        tool_config.description === tool.description &&
         tool_config.api_schema?.url === url &&
+        JSON.stringify(
+          [
+            ...(tool_config.api_schema?.request_body_schema?.required ?? []),
+          ].sort()
+        ) === JSON.stringify([...tool.required].sort()) &&
         (
           tool_config.api_schema?.request_headers?.["x-tool-secret"] as
             { secret_id?: string } | undefined

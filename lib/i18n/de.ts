@@ -350,6 +350,10 @@ export default {
     demo: {
       titles: {
         utilityEnquiries: "Internet & Strom",
+        tap: "Küchenwasserhahn tropft",
+        heating: "Heizungsausfall in Wohnung 2A",
+        lift: "Aufzug außer Betrieb",
+        lighting: "Treppenhausbeleuchtung ausgefallen",
       },
       summaries: {
         utilityEnquiries: [
@@ -384,6 +388,62 @@ export default {
     resolved: "Erledigt",
     markResolved: "Als erledigt markieren",
     trace: "Coras Aktivitäten",
+    resident: {
+      title: "Angaben der Mietpartei",
+      description: "In eigenen Worten",
+      location: "Wo",
+      since: "Seit",
+      residentActions: "Bereits erledigt",
+      safetyAdvice: "Sicherheitshinweis gegeben",
+      access: "Zugang",
+      language: "Sprache",
+    },
+    plan: {
+      title: "Nächste Schritte",
+      respond: "Reaktion {target}",
+      due: "Fällig {due}",
+      overdue: "Überfällig",
+      targets: {
+        twoHours: "innerhalb von 2 Stunden",
+        oneDay: "innerhalb von 24 Stunden",
+        threeDays: "innerhalb von 3 Werktagen",
+        tenDays: "innerhalb von 10 Werktagen",
+      },
+      trades: {
+        heatingEngineer: "Heizungsfachbetrieb",
+        plumber: "Sanitärbetrieb",
+        electrician: "Elektrofachbetrieb",
+        internetProvider: "Internetanbieter",
+        dampSpecialist: "Fachbetrieb für Feuchteschäden",
+        pestControl: "Schädlingsbekämpfung",
+        applianceService: "Gerätekundendienst",
+        liftService: "Aufzugsdienst",
+        locksmith: "Schlüsseldienst",
+        caretaker: "Hausmeisterdienst",
+      },
+      steps: {
+        triage: "Meldung prüfen und Kategorie sowie Dringlichkeit festlegen",
+        linkTenancy: "Ticket dem Mietverhältnis zuordnen",
+        callResidentNow:
+          "Mietpartei sofort zurückrufen und sicherstellen, dass niemand in Gefahr ist",
+        commission: "{trade} beauftragen",
+        noiseNotice:
+          "Beschwerde vermerken und die Nachbarn an die Hausordnung erinnern",
+        agreeAccess: "Besuchstermin mit der Mietpartei vereinbaren",
+        informResidents:
+          "Übrige Mietparteien informieren, dass es gemeldet ist",
+        confirmFixed:
+          "Mit der Mietpartei bestätigen, dass es behoben ist, dann als erledigt markieren",
+      },
+    },
+    calls: {
+      title: "Anrufzusammenfassung",
+      duration: "Dauer",
+      outcome: {
+        success: "Anruf abgeschlossen",
+        failure: "Anruf nicht abgeschlossen",
+      },
+    },
     activity: {
       incoming: "Eingehende Meldungen werden geprüft",
       reviewing: "Meldung wird geprüft",

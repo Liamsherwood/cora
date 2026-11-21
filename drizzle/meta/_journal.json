@@ -64,6 +64,13 @@
       "when": 1795226503574,
       "tag": "0008_shared_ticket_intake",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1795231635668,
+      "tag": "0009_ticket_title_details",
+      "breakpoints": true
     }
   ]
 }

@@ -13,6 +13,7 @@ import {
 
 import { cases } from "./operations"
 import type { TicketClassification } from "@/lib/tickets/classification"
+import type { TicketDetails } from "@/lib/tickets/details"
 
 export const maintenanceTickets = pgTable(
   "maintenance_tickets",
@@ -22,8 +23,11 @@ export const maintenanceTickets = pgTable(
       .unique()
       .references(() => cases.id),
     threadKey: text("thread_key").notNull(),
+    /** Short inbox title from the agent. Null for tickets filed before titles existed. */
+    title: text("title"),
     summary: text("summary").notNull(),
     classification: jsonb("classification").$type<TicketClassification>(),
+    details: jsonb("details").$type<TicketDetails>(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -40,6 +44,10 @@ export const maintenanceTickets = pgTable(
     check(
       "maintenance_tickets_summary_length",
       sql`length(${table.summary}) between 1 and 400`
+    ),
+    check(
+      "maintenance_tickets_title_length",
+      sql`length(${table.title}) between 1 and 80`
     ),
   ]
 ).enableRLS()

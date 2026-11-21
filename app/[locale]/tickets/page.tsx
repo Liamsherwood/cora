@@ -12,32 +12,43 @@ import { buttonVariants } from "@/components/ui/button"
 import { getDb } from "@/lib/db"
 import { caseRef, isUuid, ticketRef } from "@/lib/ids"
 import { getMessages, type Messages } from "@/lib/i18n/dictionaries"
+import { formatMessage } from "@/lib/i18n/format-message"
 import { isLocale, localeSettings } from "@/lib/i18n/locales"
 import { listTicketActivity } from "@/lib/tickets/activity"
 import type { TicketClassification } from "@/lib/tickets/classification"
+import type { TicketDetails } from "@/lib/tickets/details"
 import {
   listDemoTicketRuns,
   listDemoTickets,
   resolvedDemoTickets,
 } from "@/lib/tickets/demo"
+import { ticketPlan, type TicketPlan } from "@/lib/tickets/playbook"
 import {
-  getPublicTicket,
-  listPublicTicketRuns,
-  listPublicTickets,
+  getTicket,
+  listTicketCalls,
+  listTicketRuns,
+  listTickets,
   ticketPageSize,
+  type TicketCall,
 } from "@/lib/tickets/repository"
+import { now } from "@/lib/time"
+import { resolveTicketAction } from "./actions"
 import styles from "./run-details.module.css"
 
-type TicketRow =
-  | NonNullable<Awaited<ReturnType<typeof getPublicTicket>>>
-  | ReturnType<typeof listDemoTickets>[number]
+type LiveTicket = NonNullable<Awaited<ReturnType<typeof getTicket>>>
+type TicketView =
+  (LiveTicket & { demo: false }) | ReturnType<typeof listDemoTickets>[number]
 
-function ticketTitle(ticket: TicketRow, messages: Messages["tickets"]) {
-  return "summary" in ticket
-    ? (ticket.title ?? messages.report)
-    : ticket.classification
+const live = (ticket: LiveTicket): TicketView => ({ ...ticket, demo: false })
+
+/** The agent's title; tickets filed before titles existed fall back to their category. */
+function ticketTitle(ticket: TicketView, messages: Messages["tickets"]) {
+  return (
+    ticket.title ??
+    (ticket.classification
       ? messages.classification.category[ticket.classification.category]
-      : messages.report
+      : messages.report)
+  )
 }
 
 export const metadata: Metadata = {
@@ -94,6 +105,159 @@ function ClassificationBadges({
   )
 }
 
+const residentFields = [
+  "location",
+  "since",
+  "residentActions",
+  "safetyAdvice",
+  "access",
+] as const satisfies (keyof TicketDetails)[]
+
+function ResidentDetails({
+  details,
+  labels,
+  languageName,
+}: {
+  details: TicketDetails
+  labels: Messages["tickets"]["resident"]
+  languageName: (code: string) => string
+}) {
+  const facts = residentFields.filter((field) => details[field])
+  if (!details.description && !facts.length) return null
+  return (
+    <section aria-labelledby="ticket-resident" className="mt-5">
+      <h3 id="ticket-resident" className="text-sm font-medium">
+        {labels.title}
+      </h3>
+      {details.description ? (
+        <blockquote
+          lang={details.language}
+          className="mt-2 border-l-2 border-border pl-3 text-sm leading-relaxed wrap-anywhere whitespace-pre-wrap text-muted-foreground"
+        >
+          {details.description}
+        </blockquote>
+      ) : null}
+      {facts.length || details.language ? (
+        <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
+          {facts.map((field) => (
+            <div key={field}>
+              <dt className="text-xs text-muted-foreground">{labels[field]}</dt>
+              <dd className="wrap-anywhere">{details[field]}</dd>
+            </div>
+          ))}
+          {details.language ? (
+            <div>
+              <dt className="text-xs text-muted-foreground">
+                {labels.language}
+              </dt>
+              <dd>{languageName(details.language)}</dd>
+            </div>
+          ) : null}
+        </dl>
+      ) : null}
+    </section>
+  )
+}
+
+function NextSteps({
+  plan,
+  labels,
+  formatDue,
+}: {
+  plan: TicketPlan
+  labels: Messages["tickets"]["plan"]
+  formatDue: (due: NonNullable<TicketPlan["due"]>) => string
+}) {
+  if (!plan.steps.length) return null
+  return (
+    <section
+      aria-labelledby="ticket-next-steps"
+      className="mt-5 rounded-md border border-border p-4"
+    >
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+        <h3 id="ticket-next-steps" className="text-sm font-medium">
+          {labels.title}
+        </h3>
+        {plan.target ? (
+          <p className="text-xs text-muted-foreground">
+            {formatMessage(labels.respond, {
+              target: labels.targets[plan.target],
+            })}
+            {plan.due
+              ? ` · ${formatMessage(labels.due, { due: formatDue(plan.due) })}`
+              : null}
+          </p>
+        ) : null}
+        {plan.overdue ? (
+          <Badge variant="destructive">{labels.overdue}</Badge>
+        ) : null}
+      </div>
+      <ol className="mt-3 list-decimal space-y-1.5 pl-5 text-sm marker:text-muted-foreground">
+        {plan.steps.map((step) => (
+          <li key={step.kind}>
+            {step.kind === "commission"
+              ? formatMessage(labels.steps.commission, {
+                  trade: labels.trades[step.trade],
+                })
+              : labels.steps[step.kind]}
+          </li>
+        ))}
+      </ol>
+    </section>
+  )
+}
+
+function CallRecaps({
+  calls,
+  labels,
+  formatDate,
+}: {
+  calls: TicketCall[]
+  labels: Messages["tickets"]["calls"]
+  formatDate: (date: Date) => string
+}) {
+  if (!calls.length) return null
+  return (
+    <div className="border-b border-border px-5 py-5 sm:px-6">
+      <h3 className="text-base font-medium">{labels.title}</h3>
+      <ul className="mt-3 divide-y divide-border">
+        {calls.map((call) => (
+          <li key={call.conversationId} className="py-3 first:pt-0 last:pb-0">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+              <time dateTime={call.endedAt.toISOString()}>
+                {formatDate(call.endedAt)}
+              </time>
+              {call.durationSecs !== null ? (
+                <span>
+                  {labels.duration} {formatDuration(call.durationSecs)}
+                </span>
+              ) : null}
+              {call.successful !== null ? (
+                <Badge variant={call.successful ? "outline" : "destructive"}>
+                  {call.successful
+                    ? labels.outcome.success
+                    : labels.outcome.failure}
+                </Badge>
+              ) : null}
+            </div>
+            {call.summary ? (
+              <p className="mt-2 text-sm leading-relaxed wrap-anywhere whitespace-pre-wrap">
+                {call.summary}
+              </p>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+function formatDuration(secs: number) {
+  const minutes = Math.floor(secs / 60)
+  const seconds = Math.round(secs % 60)
+  return minutes ? `${minutes} min ${seconds} s` : `${seconds} s`
+}
+
 export default async function TicketsPage({
   params,
   searchParams,
@@ -111,33 +275,73 @@ export default async function TicketsPage({
   const requestedExample = examples.find(({ id }) => id === query.ticket)
   const [rows, requestedTicket, activity] = db
     ? await Promise.all([
-        listPublicTickets(db, page),
+        listTickets(db, page),
         !requestedExample && isUuid(query.ticket)
-          ? getPublicTicket(db, query.ticket)
+          ? getTicket(db, query.ticket)
           : null,
         listTicketActivity(db),
       ])
     : [[], null, []]
-  const visibleTickets: TicketRow[] = [
-    ...rows.slice(0, ticketPageSize),
+  const visibleTickets: TicketView[] = [
+    ...rows.slice(0, ticketPageSize).map(live),
     ...(page === 1 ? examples : []),
   ]
-  const ticket = requestedExample ?? requestedTicket ?? visibleTickets[0]
+  const ticket =
+    requestedExample ??
+    (requestedTicket ? live(requestedTicket) : visibleTickets[0])
   const activityByTicket = new Map(activity.map((run) => [run.ticketId, run]))
   const incomingActivity = activityByTicket.has(null)
   const ticketActivity = ticket && activityByTicket.get(ticket.id)
-  const runs = ticket
-    ? "summary" in ticket
+  const runs = !ticket
+    ? []
+    : ticket.demo
       ? listDemoTicketRuns(ticket.id)
       : db
-        ? await listPublicTicketRuns(db, ticket.id)
+        ? await listTicketRuns(db, ticket.id)
         : []
-    : []
-  const date = new Intl.DateTimeFormat(localeSettings[locale].intlLocale, {
+  const calls =
+    db && ticket && !ticket.demo
+      ? await listTicketCalls(db, [
+          ...new Set(
+            runs.flatMap((run) =>
+              run.conversationId ? [run.conversationId] : []
+            )
+          ),
+        ])
+      : []
+  const plan = ticket ? ticketPlan(ticket, now()) : null
+  const { intlLocale } = localeSettings[locale]
+  const date = new Intl.DateTimeFormat(intlLocale, {
     dateStyle: "medium",
     timeStyle: "medium",
     timeZone: "Europe/Berlin",
   })
+  const dueTime = new Intl.DateTimeFormat(intlLocale, {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Europe/Berlin",
+  })
+  const dueDay = new Intl.DateTimeFormat(intlLocale, {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    timeZone: "UTC",
+  })
+  const formatDue = (due: NonNullable<TicketPlan["due"]>) =>
+    "at" in due
+      ? dueTime.format(due.at)
+      : dueDay.format(new Date(`${due.day}T12:00:00Z`))
+  const languages = new Intl.DisplayNames([intlLocale], { type: "language" })
+  const languageName = (code: string) => {
+    try {
+      return languages.of(code) ?? code
+    } catch {
+      return code
+    }
+  }
   const pageUrl = `/${locale}/tickets`
 
   return (
@@ -207,22 +411,18 @@ export default async function TicketsPage({
                         className="block min-w-0 flex-1 self-stretch px-5 py-4 hover:bg-muted/60 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring aria-[current=page]:bg-accent aria-[current=page]:text-accent-foreground"
                       >
                         <span className="line-clamp-2 text-sm font-medium wrap-anywhere">
-                          {"summary" in item
-                            ? (item.title ?? item.summary)
-                            : ticketTitle(item, messages)}
+                          {ticketTitle(item, messages)}
                         </span>
                         <span className="mt-1 block text-xs text-muted-foreground">
-                          {"summary" in item
-                            ? item.caseId
-                              ? [
-                                  item.tenantName,
-                                  item.propertyAddress,
-                                  item.unitIdentifier,
-                                ]
-                                  .filter(Boolean)
-                                  .join(" · ")
-                              : messages.unassigned
-                            : ticketRef(item.id)}
+                          {item.caseId
+                            ? [
+                                item.tenantName,
+                                item.propertyAddress,
+                                item.unitIdentifier,
+                              ]
+                                .filter(Boolean)
+                                .join(" · ")
+                            : messages.unassigned}
                         </span>
                         <span className="mt-2 flex flex-wrap items-center justify-between gap-2">
                           <time
@@ -303,7 +503,10 @@ export default async function TicketsPage({
                     id="ticket-detail"
                     className="scroll-mt-4 text-lg font-medium"
                   >
-                    {ticketTitle(ticket, messages)} · {ticketRef(ticket.id)}
+                    {ticketTitle(ticket, messages)} ·{" "}
+                    <span className="whitespace-nowrap">
+                      {ticketRef(ticket.id)}
+                    </span>
                   </h2>
                   <TicketStatus
                     resolved={Boolean(ticket.resolvedAt)}
@@ -325,11 +528,9 @@ export default async function TicketsPage({
                       : null}
                   </div>
                 </div>
-                {"summary" in ticket ? (
-                  <p className="mt-3 text-sm leading-relaxed wrap-anywhere whitespace-pre-wrap">
-                    {ticket.summary}
-                  </p>
-                ) : null}
+                <p className="mt-3 text-sm leading-relaxed wrap-anywhere whitespace-pre-wrap">
+                  {ticket.summary}
+                </p>
                 {ticket.classification ? (
                   <div className="mt-3 flex flex-wrap gap-1.5">
                     <ClassificationBadges
@@ -340,31 +541,27 @@ export default async function TicketsPage({
                 ) : null}
                 {ticket.caseId ? (
                   <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
-                    {"summary" in ticket ? (
-                      <>
-                        <div>
-                          <dt className="text-xs text-muted-foreground">
-                            {messages.tenant}
-                          </dt>
-                          <dd>{ticket.tenantName}</dd>
-                        </div>
-                        <div>
-                          <dt className="text-xs text-muted-foreground">
-                            {messages.property}
-                          </dt>
-                          <dd>{ticket.propertyAddress}</dd>
-                        </div>
-                        <div>
-                          <dt className="text-xs text-muted-foreground">
-                            {messages.unit}
-                          </dt>
-                          <dd>
-                            {ticket.unitIdentifier ??
-                              messages.classification.scope.common}
-                          </dd>
-                        </div>
-                      </>
-                    ) : null}
+                    <div>
+                      <dt className="text-xs text-muted-foreground">
+                        {messages.tenant}
+                      </dt>
+                      <dd>{ticket.tenantName}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs text-muted-foreground">
+                        {messages.property}
+                      </dt>
+                      <dd>{ticket.propertyAddress}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs text-muted-foreground">
+                        {messages.unit}
+                      </dt>
+                      <dd>
+                        {ticket.unitIdentifier ??
+                          messages.classification.scope.common}
+                      </dd>
+                    </div>
                     <div>
                       <dt className="text-xs text-muted-foreground">
                         {messages.caseReference}
@@ -374,13 +571,24 @@ export default async function TicketsPage({
                       </dd>
                     </div>
                   </dl>
-                ) : "summary" in ticket ? (
-                  <div className="mt-4 rounded-md border border-border p-4">
-                    <p className="text-sm font-medium">{messages.unassigned}</p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {messages.noTenancies}
-                    </p>
-                  </div>
+                ) : (
+                  <p className="mt-4 text-sm font-medium">
+                    {messages.unassigned}
+                  </p>
+                )}
+                {ticket.details ? (
+                  <ResidentDetails
+                    details={ticket.details}
+                    labels={messages.resident}
+                    languageName={languageName}
+                  />
+                ) : null}
+                {plan ? (
+                  <NextSteps
+                    plan={plan}
+                    labels={messages.plan}
+                    formatDue={formatDue}
+                  />
                 ) : null}
                 <p className="mt-3 text-xs text-muted-foreground">
                   {messages.opened} ·{" "}
@@ -395,7 +603,7 @@ export default async function TicketsPage({
                       {date.format(ticket.resolvedAt)}
                     </time>
                   </p>
-                ) : "summary" in ticket ? (
+                ) : ticket.demo ? (
                   <Link
                     href={{
                       pathname: pageUrl,
@@ -409,8 +617,24 @@ export default async function TicketsPage({
                   >
                     {messages.markResolved}
                   </Link>
-                ) : null}
+                ) : (
+                  <form action={resolveTicketAction}>
+                    <input type="hidden" name="ticketId" value={ticket.id} />
+                    <button
+                      type="submit"
+                      className={`${resolveButtonClassName} mt-4`}
+                    >
+                      {messages.markResolved}
+                    </button>
+                  </form>
+                )}
               </div>
+
+              <CallRecaps
+                calls={calls}
+                labels={messages.calls}
+                formatDate={(at) => date.format(at)}
+              />
 
               <div className="px-5 py-5 sm:px-6">
                 <h3 className="text-base font-medium">{messages.trace}</h3>
@@ -459,36 +683,44 @@ export default async function TicketsPage({
                           {messages.send[run.sendStatus]}
                         </Badge>
                       </div>
-                      {"model" in run ? (
-                        <details className={styles.details}>
-                          <summary className="flex min-h-10 w-fit cursor-pointer list-none items-center gap-1.5 rounded-sm text-xs font-medium text-muted-foreground hover:text-foreground [&::-webkit-details-marker]:hidden">
-                            <span aria-hidden="true" className={styles.icon} />
-                            {messages.runDetails}
-                          </summary>
-                          <div className="min-h-0 overflow-hidden">
-                            <dl className="grid gap-2 rounded-md bg-muted px-3 py-2 text-xs sm:grid-cols-2">
-                              {typeof run.model === "string" ? (
-                                <div>
-                                  <dt className="text-muted-foreground">
-                                    {messages.model}
-                                  </dt>
-                                  <dd className="font-mono wrap-anywhere">
-                                    {run.model}
-                                  </dd>
-                                </div>
-                              ) : null}
+                      <details className={styles.details}>
+                        <summary className="flex min-h-10 w-fit cursor-pointer list-none items-center gap-1.5 rounded-sm text-xs font-medium text-muted-foreground hover:text-foreground [&::-webkit-details-marker]:hidden">
+                          <span aria-hidden="true" className={styles.icon} />
+                          {messages.runDetails}
+                        </summary>
+                        <div className="min-h-0 overflow-hidden">
+                          <dl className="grid gap-2 rounded-md bg-muted px-3 py-2 text-xs sm:grid-cols-2">
+                            {run.model ? (
                               <div>
                                 <dt className="text-muted-foreground">
-                                  {messages.runId}
+                                  {messages.model}
                                 </dt>
                                 <dd className="font-mono wrap-anywhere">
-                                  {run.id}
+                                  {run.model}
                                 </dd>
                               </div>
-                            </dl>
-                          </div>
-                        </details>
-                      ) : null}
+                            ) : null}
+                            {run.conversationId ? (
+                              <div>
+                                <dt className="text-muted-foreground">
+                                  {messages.conversationId}
+                                </dt>
+                                <dd className="font-mono wrap-anywhere">
+                                  {run.conversationId}
+                                </dd>
+                              </div>
+                            ) : null}
+                            <div>
+                              <dt className="text-muted-foreground">
+                                {messages.runId}
+                              </dt>
+                              <dd className="font-mono wrap-anywhere">
+                                {run.id}
+                              </dd>
+                            </div>
+                          </dl>
+                        </div>
+                      </details>
                     </li>
                   ))}
                 </ol>

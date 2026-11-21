@@ -345,6 +345,10 @@ const en = {
     demo: {
       titles: {
         utilityEnquiries: "Internet & electricity",
+        tap: "Kitchen tap leaking",
+        heating: "No heating in flat 2A",
+        lift: "Lift out of service",
+        lighting: "Stairwell lights out",
       },
       summaries: {
         utilityEnquiries: [
@@ -379,6 +383,61 @@ const en = {
     resolved: "Resolved",
     markResolved: "Mark as resolved",
     trace: "Cora activity",
+    resident: {
+      title: "From the resident",
+      description: "In their words",
+      location: "Where",
+      since: "Since",
+      residentActions: "Already done",
+      safetyAdvice: "Safety advice given",
+      access: "Access",
+      language: "Language",
+    },
+    plan: {
+      title: "Next steps",
+      respond: "Respond {target}",
+      due: "Due {due}",
+      overdue: "Overdue",
+      targets: {
+        twoHours: "within 2 hours",
+        oneDay: "within 24 hours",
+        threeDays: "within 3 working days",
+        tenDays: "within 10 working days",
+      },
+      trades: {
+        heatingEngineer: "heating engineer",
+        plumber: "plumber",
+        electrician: "electrician",
+        internetProvider: "internet provider",
+        dampSpecialist: "damp specialist",
+        pestControl: "pest control service",
+        applianceService: "appliance repair service",
+        liftService: "lift service company",
+        locksmith: "locksmith",
+        caretaker: "caretaker",
+      },
+      steps: {
+        triage: "Read the report and set its category and priority",
+        linkTenancy: "Link the ticket to the resident’s tenancy",
+        callResidentNow:
+          "Call the resident back now and check everyone is safe",
+        commission: "Commission the {trade}",
+        noiseNotice:
+          "Note the complaint and remind the neighbours of the house rules",
+        agreeAccess: "Agree a visit time with the resident",
+        informResidents: "Tell the other residents it has been reported",
+        confirmFixed:
+          "Confirm with the resident that it is fixed, then mark it resolved",
+      },
+    },
+    calls: {
+      title: "Call recap",
+      duration: "Duration",
+      outcome: {
+        success: "Call completed",
+        failure: "Call not completed",
+      },
+    },
     activity: {
       incoming: "Reviewing incoming reports",
       reviewing: "Reviewing report",

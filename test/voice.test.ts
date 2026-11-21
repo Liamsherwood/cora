@@ -5,8 +5,12 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest"
 
 import type { DB } from "@/lib/db"
 import * as t from "@/lib/db/schema"
-import { caseRef } from "@/lib/ids"
-import { getTicket, listTicketRuns } from "@/lib/tickets/repository"
+import { caseRef, nameUuid } from "@/lib/ids"
+import {
+  getTicket,
+  listTicketCalls,
+  listTicketRuns,
+} from "@/lib/tickets/repository"
 import { verifyElevenLabsSignature } from "@/lib/voice/auth"
 import {
   findCallerByNameAndStreet,
@@ -19,6 +23,7 @@ import {
   supportContext,
 } from "@/lib/voice/caller"
 import { greeting } from "@/lib/voice/greetings"
+import { fileTicketInput } from "@/lib/voice/tools"
 
 import { closeDb, expectAppError, LENA, resetDb, UNIT_4B } from "./helpers"
 
@@ -91,8 +96,13 @@ describe("cases by voice", () => {
       category: "heating",
       priority: "high",
       scope: "unit",
+      title: "living room radiator cold.",
       description: "Die Heizung im Wohnzimmer bleibt kalt.",
       summary: "Living room radiator stays cold.",
+      location: "Living room",
+      since: "Since yesterday evening",
+      resident_actions: "Bled the radiator",
+      access: "Weekdays after 17:00",
       conversation_id: "conv_test",
     } as const
     const [r, replay] = await Promise.all([
@@ -101,6 +111,7 @@ describe("cases by voice", () => {
     ])
     expect(replay).toEqual(r)
     expect(r.reference).toBe(caseRef(r.case_id))
+    expect(r.title).toBe("Living room radiator cold")
     const classification = {
       category: "heating",
       priority: "high",
@@ -108,8 +119,19 @@ describe("cases by voice", () => {
     }
     expect(await getTicket(db, r.ticket_id)).toMatchObject({
       caseId: r.case_id,
+      title: "Living room radiator cold",
       classification,
       summary: issue.summary,
+      details: {
+        description: issue.description,
+        location: "Living room",
+        since: "Since yesterday evening",
+        residentActions: "Bled the radiator",
+        access: "Weekdays after 17:00",
+        language: "de",
+      },
+      tenantName: "Liam Sherwood",
+      unitIdentifier: "4B",
     })
     expect(await listTicketRuns(db, r.ticket_id)).toMatchObject([
       {
@@ -146,7 +168,8 @@ describe("cases by voice", () => {
     const open = await openCases(db, lena)
     expect(open[0]).toMatchObject({
       reference: r.reference,
-      summary: "Living room radiator stays cold.",
+      summary: "Living room radiator cold",
+      description: issue.description,
     })
     expect((await findCase(db, lena, r.reference.toLowerCase())).case_id).toBe(
       r.case_id
@@ -186,6 +209,81 @@ describe("cases by voice", () => {
       }),
       403
     )
+  })
+})
+
+describe("file_maintenance_ticket arguments", () => {
+  const base = {
+    party_id: LENA,
+    category: "plumbing",
+    priority: "normal",
+    description: "Der Wasserhahn in der Küche tropft.",
+    summary: "Kitchen tap dripping.",
+  }
+
+  it("treats blank and null optionals as missing and drops unknown keys", () => {
+    const parsed = fileTicketInput.parse({
+      ...base,
+      unit_id: "",
+      scope: "",
+      title: "",
+      since: null,
+      access: "   ",
+      conversation_id: "",
+      urgency_note: "from a newer tool schema",
+    })
+    expect(parsed).toEqual({ ...base, scope: "unit" })
+  })
+
+  it("clips long text instead of losing the report", () => {
+    const parsed = fileTicketInput.parse({
+      ...base,
+      title: "Kitchen tap ".repeat(20),
+      description: "Tropft. ".repeat(300),
+    })
+    expect(parsed.title!.length).toBeLessThanOrEqual(120)
+    expect(parsed.description.length).toBeLessThanOrEqual(1000)
+    expect(parsed.description.endsWith("…")).toBe(true)
+  })
+
+  it("still refuses identifiers that don't come from call context", () => {
+    expect(fileTicketInput.safeParse({ ...base, party_id: "" }).success).toBe(
+      false
+    )
+    expect(fileTicketInput.safeParse({ ...base, unit_id: "4B" }).success).toBe(
+      false
+    )
+    expect(
+      fileTicketInput.safeParse({ ...base, category: "roof" }).success
+    ).toBe(false)
+  })
+})
+
+describe("call recap on the ticket", () => {
+  it("finds the post-call summary by conversation ID", async () => {
+    await db.insert(t.events).values({
+      id: nameUuid("elevenlabs-call:conv_recap"),
+      type: "call.completed",
+      unitId: UNIT_4B,
+      partyId: LENA,
+      occurredAt: new Date("2026-11-21T09:30:00Z"),
+      payload: {
+        conversation_id: "conv_recap",
+        summary: "Resident reported a dripping kitchen tap.",
+        call_successful: "success",
+        duration_secs: 142,
+      },
+    })
+    expect(await listTicketCalls(db, ["conv_recap", "conv_other"])).toEqual([
+      {
+        conversationId: "conv_recap",
+        summary: "Resident reported a dripping kitchen tap.",
+        successful: true,
+        durationSecs: 142,
+        endedAt: new Date("2026-11-21T09:30:00Z"),
+      },
+    ])
+    expect(await listTicketCalls(db, [])).toEqual([])
   })
 })
 

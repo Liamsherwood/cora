@@ -1,9 +1,9 @@
 import "server-only"
 
-import { and, asc, desc, eq, isNull, sql } from "drizzle-orm"
+import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm"
 
 import type { DB, Exec, Tx } from "@/lib/db"
-import { cases } from "@/lib/db/schema/operations"
+import { cases, events } from "@/lib/db/schema/operations"
 import { parties, properties, units } from "@/lib/db/schema/portfolio"
 import {
   maintenanceTickets,
@@ -11,12 +11,17 @@ import {
   ticketIntakes,
 } from "@/lib/db/schema/tickets"
 import type { TicketClassification } from "./classification"
+import { mergeDetails, ticketTitle, type TicketDetails } from "./details"
 import { findTicketTenancy, matchWhatsAppTenancy } from "./tenancies"
 
 export type TicketReport = {
   kind: "report" | "follow_up"
+  /** Short inbox title; tidied and clipped on save. */
+  title?: string | null
   summary: string
   classification?: TicketClassification
+  /** Merged into what the ticket already knows; empty values never erase a fact. */
+  details?: TicketDetails | null
 }
 
 type AgentRun = Pick<
@@ -87,8 +92,10 @@ export function saveTicketRun(
       .select({
         id: maintenanceTickets.id,
         caseId: maintenanceTickets.caseId,
+        title: maintenanceTickets.title,
         summary: maintenanceTickets.summary,
         classification: maintenanceTickets.classification,
+        details: maintenanceTickets.details,
       })
       .from(maintenanceTickets)
       .where(
@@ -106,6 +113,7 @@ export function saveTicketRun(
         ? await matchWhatsAppTenancy(tx, senderPhone, run.startedAt)
         : null
     const classification = report?.classification
+    const title = ticketTitle(report?.title)
     const caseId =
       open?.caseId ??
       (createVoiceCase
@@ -120,7 +128,14 @@ export function saveTicketRun(
 
       const [created] = await tx
         .insert(maintenanceTickets)
-        .values({ threadKey, caseId, summary: report.summary, classification })
+        .values({
+          threadKey,
+          caseId,
+          title,
+          summary: report.summary,
+          classification,
+          details: mergeDetails(null, report.details),
+        })
         .returning({ id: maintenanceTickets.id })
       ticketId = created.id
       ticketChange = "opened"
@@ -131,18 +146,23 @@ export function saveTicketRun(
         (classification.category !== open.classification?.category ||
           classification.priority !== open.classification?.priority ||
           classification.scope !== open.classification?.scope)
+      const details = mergeDetails(open.details, report?.details)
       if (
         report &&
         (caseId !== open.caseId ||
           report.summary !== open.summary ||
-          classificationChanged)
+          classificationChanged ||
+          (title !== null && title !== open.title) ||
+          JSON.stringify(details) !== JSON.stringify(open.details ?? null))
       ) {
         await tx
           .update(maintenanceTickets)
           .set({
             caseId,
+            title: title ?? open.title,
             summary: report.summary,
             classification,
+            details,
             updatedAt: sql`clock_timestamp()`,
           })
           .where(eq(maintenanceTickets.id, ticketId))
@@ -195,41 +215,22 @@ export async function setTicketRunSendStatus(
     )
 }
 
-const publicTicketFields = {
+const ticketFields = {
   id: maintenanceTickets.id,
   caseId: maintenanceTickets.caseId,
+  title: maintenanceTickets.title,
+  summary: maintenanceTickets.summary,
   classification: maintenanceTickets.classification,
+  details: maintenanceTickets.details,
   createdAt: maintenanceTickets.createdAt,
   updatedAt: maintenanceTickets.updatedAt,
   resolvedAt: maintenanceTickets.resolvedAt,
-}
-
-const ticketFields = {
-  ...publicTicketFields,
-  summary: maintenanceTickets.summary,
   tenantName: parties.name,
   propertyAddress: properties.address,
   unitIdentifier: units.identifier,
 }
 
 export const ticketPageSize = 25
-
-export function listPublicTickets(db: Exec, page: number) {
-  return db
-    .select(publicTicketFields)
-    .from(maintenanceTickets)
-    .orderBy(desc(maintenanceTickets.updatedAt), desc(maintenanceTickets.id))
-    .offset((page - 1) * ticketPageSize)
-    .limit(ticketPageSize + 1)
-}
-
-export async function getPublicTicket(db: Exec, id: string) {
-  const [ticket] = await db
-    .select(publicTicketFields)
-    .from(maintenanceTickets)
-    .where(eq(maintenanceTickets.id, id))
-  return ticket ?? null
-}
 
 function ticketsWithCase(db: Exec) {
   return db
@@ -255,28 +256,16 @@ export async function getTicket(db: Exec, id: string) {
   return ticket ?? null
 }
 
-const publicRunFields = {
-  id: ticketAgentRuns.id,
-  agent: ticketAgentRuns.agent,
-  classification: ticketAgentRuns.classification,
-  startedAt: ticketAgentRuns.startedAt,
-  ticketChange: ticketAgentRuns.ticketChange,
-  replyType: ticketAgentRuns.replyType,
-  sendStatus: ticketAgentRuns.sendStatus,
-}
-
-export function listPublicTicketRuns(db: Exec, ticketId: string) {
-  return db
-    .select(publicRunFields)
-    .from(ticketAgentRuns)
-    .where(eq(ticketAgentRuns.ticketId, ticketId))
-    .orderBy(asc(ticketAgentRuns.startedAt), asc(ticketAgentRuns.id))
-}
-
 export function listTicketRuns(db: Exec, ticketId: string) {
   return db
     .select({
-      ...publicRunFields,
+      id: ticketAgentRuns.id,
+      agent: ticketAgentRuns.agent,
+      classification: ticketAgentRuns.classification,
+      startedAt: ticketAgentRuns.startedAt,
+      ticketChange: ticketAgentRuns.ticketChange,
+      replyType: ticketAgentRuns.replyType,
+      sendStatus: ticketAgentRuns.sendStatus,
       model: ticketAgentRuns.model,
       gatewayGenerationId: ticketAgentRuns.gatewayGenerationId,
       conversationId: ticketAgentRuns.conversationId,
@@ -299,6 +288,59 @@ export function listRecentTicketRuns(db: Exec, limit: number) {
     .from(ticketAgentRuns)
     .orderBy(desc(ticketAgentRuns.startedAt), desc(ticketAgentRuns.id))
     .limit(limit)
+}
+
+export type TicketCall = {
+  conversationId: string
+  summary: string
+  successful: boolean | null
+  durationSecs: number | null
+  endedAt: Date
+}
+
+/**
+ * The finished calls behind a ticket: ElevenLabs' post-call webhook stores each one as a
+ * `call.completed` event keyed by conversation ID (see /api/voice/webhooks/post-call).
+ */
+export async function listTicketCalls(
+  db: Exec,
+  conversationIds: string[]
+): Promise<TicketCall[]> {
+  if (!conversationIds.length) return []
+  const rows = await db
+    .select({ payload: events.payload, occurredAt: events.occurredAt })
+    .from(events)
+    .where(
+      and(
+        eq(events.type, "call.completed"),
+        inArray(
+          sql<string>`${events.payload}->>'conversation_id'`,
+          conversationIds
+        )
+      )
+    )
+    .orderBy(asc(events.occurredAt))
+  return rows.map(({ payload, occurredAt }) => {
+    const call = payload as {
+      conversation_id: string
+      summary?: string
+      call_successful?: string | null
+      duration_secs?: number | null
+    }
+    return {
+      conversationId: call.conversation_id,
+      summary: call.summary ?? "",
+      successful:
+        call.call_successful === "success"
+          ? true
+          : call.call_successful === "failure"
+            ? false
+            : null,
+      durationSecs:
+        typeof call.duration_secs === "number" ? call.duration_secs : null,
+      endedAt: occurredAt,
+    }
+  })
 }
 
 export function linkTicketToTenancy(

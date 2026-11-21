@@ -9,9 +9,12 @@ type DemoRun = Pick<
   "id" | "agent" | "startedAt" | "ticketChange" | "sendStatus"
 >
 type DemoMessages = Messages["tickets"]["demo"]
-type DemoTicket = Omit<Ticket, "summary" | "createdAt" | "updatedAt"> & {
+type DemoTicket = Omit<
+  Ticket,
+  "title" | "summary" | "details" | "createdAt" | "updatedAt"
+> & {
   summaryKey: keyof DemoMessages["summaries"]
-  titleKey?: keyof DemoMessages["titles"]
+  titleKey: keyof DemoMessages["titles"]
   runs: [DemoRun, ...DemoRun[]]
 }
 
@@ -41,6 +44,7 @@ const examples: DemoTicket[] = [
   {
     id: tapTicketId,
     summaryKey: "tap",
+    titleKey: "tap",
     classification: { category: "plumbing", priority: "normal", scope: "unit" },
     caseId: "90000000-0000-4000-8000-000000000001",
     tenantName: "Liam Sherwood",
@@ -67,6 +71,7 @@ const examples: DemoTicket[] = [
   {
     id: "80000100-0000-4000-8000-000000000002",
     summaryKey: "heating",
+    titleKey: "heating",
     classification: { category: "heating", priority: "high", scope: "unit" },
     caseId: "90000100-0000-4000-8000-000000000002",
     tenantName: "Jonas Weber",
@@ -86,6 +91,7 @@ const examples: DemoTicket[] = [
   {
     id: "80000200-0000-4000-8000-000000000003",
     summaryKey: "lift",
+    titleKey: "lift",
     classification: { category: "elevator", priority: "high", scope: "common" },
     caseId: null,
     tenantName: null,
@@ -105,6 +111,7 @@ const examples: DemoTicket[] = [
   {
     id: "80000300-0000-4000-8000-000000000004",
     summaryKey: "lighting",
+    titleKey: "lighting",
     classification: {
       category: "electrical",
       priority: "normal",
@@ -148,11 +155,13 @@ export function listDemoTickets(
 
     return {
       ...ticket,
-      title: titleKey ? titles[titleKey] : undefined,
+      title: titles[titleKey],
       summary: summaries[summaryKey],
+      details: null,
       createdAt: firstRun.startedAt,
       updatedAt: resolvedAt ?? lastRun.startedAt,
       resolvedAt,
+      demo: true as const,
     }
   })
 }

@@ -37,6 +37,7 @@ const ticketInstructions = `
 Use review_resident_message to draft your reply and decide whether to file a maintenance report:
 - Use "report" for a concrete maintenance problem the resident says is happening. Use "follow_up" when the resident only adds details about a problem already discussed.
 - Return null for greetings, general questions, hypothetical problems, unclear issues, or requests unrelated to maintenance.
+- Give the report an English title of 3 to 6 words naming the fault and where it is, such as "Kitchen tap leaking". No names.
 - Summarize the reported problem and its location when known, in the resident's language and under 400 characters. Carry relevant facts forward from the conversation. Omit names, phone numbers, email addresses, full street addresses, access codes, payment information, and identity details.
 - Write the reply in the language of the latest message. Ask for any missing detail that would help the property manager. Cora adds the ticket reference after saving. Leave any confirmation or reference out of the draft.
 ${classificationInstructions}
@@ -50,6 +51,8 @@ const reviewResidentMessage = tool({
     report: z
       .object({
         kind: z.enum(["report", "follow_up"]),
+        // Clipped on save rather than limited here: a long title must not cost the report.
+        title: z.string(),
         summary: z.string().trim().min(1).max(400),
         classification: ticketClassification,
       })

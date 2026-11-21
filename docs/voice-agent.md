@@ -17,7 +17,7 @@ caller ──phone──▶ ElevenLabs agent ──webhook──▶ /api/voice/i
 | Tool `identify_caller` | `POST /api/voice/tools/identify` | Without caller ID: full name + street must match exactly one resident |
 | Tool `get_cases` | `POST /api/voice/tools/cases` | Open cases with status, next visit and contractor, or one case by reference (`C-1A2B3C`) |
 | Tool `begin_issue_intake` | `POST /api/voice/tools/begin-issue` | Shows staff that Cora is reviewing an incoming maintenance report |
-| Tool `file_maintenance_ticket` | `POST /api/voice/tools/report-issue` | Saves the classified ticket, linked centrix case, `case.created` event and agent run together |
+| Tool `file_maintenance_ticket` | `POST /api/voice/tools/report-issue` | Saves the titled, classified ticket with the resident's details, linked centrix case, `case.created` event and agent run together |
 | Tool `record_decision` | `POST /api/voice/tools/decision` | Move-in offer: accept with consent, or decline |
 | Post-call webhook | `POST /api/voice/webhooks/post-call` | Stores the call summary as a `call.completed` event; the next call starts from it |
 
@@ -50,8 +50,36 @@ cases: no rent, no owner data, no other residents.
 Open the live **Tickets** inbox and place a test call from a recognised resident.
 Report a fictional maintenance issue and pause while Cora asks for more detail.
 The inbox shows an incoming report during intake. After Cora reads a case
-reference, open the ticket to see the category, priority, scope and ElevenLabs
-conversation ID.
+reference, open the ticket to see its title, summary, classification, the
+resident's account and details, the next steps, and (once the post-call webhook
+arrives) the call recap.
+
+Deploy the app before running `npm run voice:sync` whenever the tool changes: the
+endpoint accepts both the old and the new tool arguments, so either order works,
+but the new fields are only stored once the deployment has them.
+
+## What a ticket records
+
+`file_maintenance_ticket` sends, besides the classification:
+
+| Argument | Stored as | Notes |
+|---|---|---|
+| `title` | `maintenance_tickets.title` | English, 3–6 words. Tidied and clipped to 60 characters; the inbox falls back to the category for older tickets |
+| `summary` | `maintenance_tickets.summary` | One or two English sentences for staff |
+| `description` | `details.description` | The resident's account in their language |
+| `location`, `since`, `resident_actions`, `safety_advice`, `access` | `details.*` | Optional; blank or `null` means unknown |
+
+The resident's preferred language is added from centrix. Free text is clipped,
+never rejected, and unknown arguments are ignored, so a long answer or a tool
+schema out of step with the deployment never loses a report. Only `party_id` and
+`unit_id` stay strict, because they must come from verified call context.
+
+Next steps and the response target are plain rules in `lib/tickets/playbook.ts`,
+not model output: the contractor trade follows the category, the target follows the
+priority (emergency 2 h, high 24 h, normal 3 working days, low 10 working days, our
+assumption of typical service levels), and visits, building notices and tenancy
+linking are added when the ticket calls for them. The call recap is the
+`call.completed` event the post-call webhook stores for the run's conversation ID.
 
 ## Dynamic variables
 

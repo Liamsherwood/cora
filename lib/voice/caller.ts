@@ -16,6 +16,7 @@ import * as t from "@/lib/db/schema"
 import { AppError, notFound } from "@/lib/errors"
 import { caseRef, isUuid, nameUuid, newId } from "@/lib/ids"
 import type { TicketClassification } from "@/lib/tickets/classification"
+import { ticketTitle } from "@/lib/tickets/details"
 import { saveTicketRun } from "@/lib/tickets/repository"
 import { addDays, clock, now, toDay } from "@/lib/time"
 
@@ -268,7 +269,8 @@ export async function openCases(db: Exec, caller: Caller): Promise<CaseView[]> {
   for (const e of created) {
     const p = e.payload as Record<string, unknown>
     textOf.set(String(p.case_id), {
-      summary: String(p.summary ?? ""),
+      // The short title reads better on the phone than the staff summary.
+      summary: String(p.title ?? p.summary ?? ""),
       description: String(p.description ?? ""),
       at: e.occurredAt,
     })
@@ -342,8 +344,15 @@ export async function findCase(db: Exec, caller: Caller, reference: string) {
 
 export type NewIssue = TicketClassification & {
   unit_id?: string
+  /** Short English inbox title, e.g. "Kitchen tap leaking". */
+  title?: string
   description: string
   summary: string
+  location?: string
+  since?: string
+  resident_actions?: string
+  safety_advice?: string
+  access?: string
   conversation_id?: string
 }
 
@@ -378,6 +387,7 @@ export async function reportIssue(db: DB, caller: Caller, issue: NewIssue) {
         ])
       )
     : newId()
+  const title = ticketTitle(issue.title)
   const ticket = await saveTicketRun(db, {
     threadKey: reportKey,
     messageKey: reportKey,
@@ -385,7 +395,21 @@ export async function reportIssue(db: DB, caller: Caller, issue: NewIssue) {
     conversationId: issue.conversation_id,
     replyType: "generated",
     startedAt: clock(),
-    report: { kind: "report", summary: issue.summary, classification },
+    report: {
+      kind: "report",
+      title,
+      summary: issue.summary,
+      classification,
+      details: {
+        description: issue.description,
+        location: issue.location,
+        since: issue.since,
+        residentActions: issue.resident_actions,
+        safetyAdvice: issue.safety_advice,
+        access: issue.access,
+        language: caller.language,
+      },
+    },
     createVoiceCase: async (tx) => {
       const caseId = newId()
       await tx.insert(t.cases).values({
@@ -407,6 +431,7 @@ export async function reportIssue(db: DB, caller: Caller, issue: NewIssue) {
           case_id: caseId,
           ...classification,
           channel: "voice",
+          ...(title ? { title } : {}),
           description: issue.description,
           summary: issue.summary,
           ...(issue.conversation_id
@@ -424,6 +449,7 @@ export async function reportIssue(db: DB, caller: Caller, issue: NewIssue) {
     reference: caseRef(caseId),
     case_id: caseId,
     ticket_id: ticket.ticketId,
+    title,
     where:
       issue.scope === "common"
         ? `${home.address}, common area`

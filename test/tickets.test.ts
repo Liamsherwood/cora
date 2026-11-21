@@ -18,11 +18,8 @@ import {
   startTicketIntake,
 } from "@/lib/tickets/activity"
 import {
-  getPublicTicket,
   getTicket,
   linkTicketToTenancy,
-  listPublicTicketRuns,
-  listPublicTickets,
   listTicketRuns,
   listTickets,
   saveTicketRun,
@@ -40,7 +37,12 @@ const reportRun = {
   gatewayGenerationId: "gen_test_report",
   startedAt: new Date("2026-11-21T09:00:00Z"),
   replyType: "generated",
-  report: { kind: "report", summary: "Kitchen tap leaking in unit 4B." },
+  report: {
+    kind: "report",
+    title: "  „kitchen tap leaking.“ ",
+    summary: "Kitchen tap leaking in unit 4B.",
+    details: { location: "Kitchen", residentActions: "Shut off the water" },
+  },
 } as const
 
 async function addTenant(
@@ -109,6 +111,8 @@ describe("WhatsApp ticket intake", () => {
       report: {
         kind: "follow_up",
         summary: "Kitchen tap in unit 4B leaking into the cupboard.",
+        // A follow-up adds facts; a blank value never erases one.
+        details: { since: "This morning", location: "" },
       },
     })
     const fallbackRun = await saveTicketRun(db, {
@@ -133,24 +137,15 @@ describe("WhatsApp ticket intake", () => {
     expect(tickets[0].summary).toBe(
       "Kitchen tap in unit 4B leaking into the cupboard."
     )
-    const [publicTicket] = await listPublicTickets(db, 1)
-    expect(publicTicket).toEqual({
-      id: tickets[0].id,
-      caseId: tickets[0].caseId,
-      classification: tickets[0].classification,
-      createdAt: tickets[0].createdAt,
-      updatedAt: tickets[0].updatedAt,
-      resolvedAt: tickets[0].resolvedAt,
+    expect(tickets[0]).toMatchObject({
+      title: "Kitchen tap leaking",
+      details: {
+        location: "Kitchen",
+        residentActions: "Shut off the water",
+        since: "This morning",
+      },
     })
-    expect(await getPublicTicket(db, tickets[0].id)).toEqual(publicTicket)
-    const [publicRun] = await listPublicTicketRuns(db, tickets[0].id)
-    expect(publicRun).toMatchObject({
-      id: openedRunId,
-      agent: "cora-whatsapp",
-      sendStatus: "accepted",
-    })
-    expect(publicRun).not.toHaveProperty("gatewayGenerationId")
-    expect(publicRun).not.toHaveProperty("conversationId")
+    expect(await getTicket(db, tickets[0].id)).toEqual(tickets[0])
     expect(await listTicketRuns(db, tickets[0].id)).toMatchObject([
       {
         id: openedRunId,
