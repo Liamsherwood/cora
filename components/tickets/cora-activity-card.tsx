@@ -46,7 +46,7 @@ export async function CoraActivityCard({
     >
       {db ? <AutoRefresh intervalMs={10000} /> : null}
       <div className="flex items-center gap-2.5">
-        <CoraAvatar active={active} />
+        <CoraAvatar active={active} size={48} />
         <div className="min-w-0">
           <h2
             id="cora-activity-card"
