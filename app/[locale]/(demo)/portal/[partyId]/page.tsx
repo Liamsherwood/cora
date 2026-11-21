@@ -11,6 +11,7 @@ import { AutoRefresh } from "@/components/partner-connect/auto-refresh"
 import { day, eur, time } from "@/components/partner-connect/format"
 import { StateBadge, Tracking } from "@/components/partner-connect/status"
 import { VoiceWidget } from "@/components/partner-connect/voice-widget"
+import { WebCall } from "@/components/partner-connect/web-call"
 import {
   Card,
   CardAction,
@@ -24,6 +25,7 @@ import { getDb } from "@/lib/db"
 import { cn } from "@/lib/utils"
 import { buildDynamicVariables } from "@/lib/voice/elevenlabs"
 import { moveInGreeting } from "@/lib/voice/greetings"
+import { webCallState } from "@/lib/voice/web-call"
 import { getRunView, listRuns } from "@/lib/workflow/engine"
 
 const FIELD_LABELS: Record<string, string> = {
@@ -58,10 +60,16 @@ export default async function PortalPage({
   )
   const views = await Promise.all(visible.map((r) => getRunView(db, r.id)))
 
+  // Cora's browser call: ringing (or just finished) for one of the tenant's workflows.
+  const callStates = await Promise.all(
+    views.map(async (v) => ({ v, state: await webCallState(db, v.run.id) }))
+  )
+  const call = callStates.find((c) => c.state !== null)
+
   const agentId = process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID
   const talkAbout = views.find((v) => v.run.state === "offer_sent")
   const voiceContext =
-    agentId && talkAbout
+    agentId && talkAbout && !call
       ? await buildDynamicVariables(db, talkAbout.run.id)
       : null
 
@@ -74,6 +82,14 @@ export default async function PortalPage({
           Everything for your new flat in one place. Managed by reltix.
         </p>
       </div>
+      {call && (
+        <WebCall
+          key={call.v.run.id}
+          runId={call.v.run.id}
+          partnerName={call.v.offer?.partner_name ?? "the provider"}
+          initialState={call.state!}
+        />
+      )}
       {views.length === 0 && (
         <Card>
           <CardContent>
