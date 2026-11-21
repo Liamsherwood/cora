@@ -13,6 +13,7 @@ import {
 import { FIELD_LABELS } from "@/lib/workflow/minimize"
 import { getCaller, supportContext } from "@/lib/voice/caller"
 import { moveInGreeting } from "@/lib/voice/greetings"
+import { voiceMode, WEB_RINGING } from "@/lib/voice/mode"
 
 /**
  * Outbound call through ElevenLabs Agents (Twilio number imported in the ElevenLabs
@@ -91,13 +92,17 @@ export async function startCall(db: DB, runId: string) {
   // Claim the run BEFORE dialling: the atomic state change means two clicks can never
   // ring the tenant twice. The offer is in the portal from this moment on, so a failed
   // call still leaves the tenant a way to answer.
+  // No phone number but an agent: ring the tenant in the portal (browser call).
+  const mode = voiceMode()
   await markOfferSent(db, runId, {
     channel: "voice",
     actor: "ai",
     costCents: estimatedCost,
-    externalThreadId: voiceConfigured() ? "pending" : "simulated",
+    externalThreadId:
+      mode === "phone" ? "pending" : mode === "web" ? WEB_RINGING : "simulated",
   })
-  if (!voiceConfigured()) return { mode: "simulated" as const }
+  if (mode === "web") return { mode: "web" as const }
+  if (mode !== "phone") return { mode: "simulated" as const }
 
   try {
     const res = await fetch(
