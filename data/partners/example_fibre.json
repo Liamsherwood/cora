@@ -1,8 +1,8 @@
 {
   "spec_version": "1.0",
   "id": "example_fibre",
-  "name": "Example Fibre",
-  "legal_entity": "Example Fibre GmbH",
+  "name": "Lichtweg Glasfaser",
+  "legal_entity": "Lichtweg Glasfaser GmbH",
   "category": "internet",
   "triggers": ["tenant.move_in"],
   "contact_window_days_before": 21,

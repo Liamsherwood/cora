@@ -41,7 +41,7 @@ describe("demo ticket inbox", () => {
     expect(ticket.summary).toContain(
       "The Reltix assistant called Liam Sherwood"
     )
-    expect(ticket.summary).toContain("ordered Example Fibre’s Fibre 500 plan")
+    expect(ticket.summary).toContain("ordered Lichtweg Glasfaser’s Fibre 500 plan")
     expect(ticket.summary).toContain("A free 5G router is due by 24 November")
     expect(ticket.summary).toContain(
       "added an electricity offer from the local Stadtwerk to the tenant portal. Liam can accept it there."
