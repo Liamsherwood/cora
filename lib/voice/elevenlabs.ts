@@ -11,6 +11,8 @@ import {
   setConversationThread,
 } from "@/lib/workflow/engine"
 import { FIELD_LABELS } from "@/lib/workflow/minimize"
+import { getCaller, supportContext } from "@/lib/voice/caller"
+import { moveInGreeting } from "@/lib/voice/greetings"
 
 /**
  * Outbound call through ElevenLabs Agents (Twilio number imported in the ElevenLabs
@@ -34,8 +36,17 @@ export async function buildDynamicVariables(db: DB, runId: string) {
   const offer = view.offer
   if (!offer) throw unprocessable("workflow has no offer to talk about")
   const snapshot = await getUnitSnapshot(db, view.run.unitId)
+  // The same agent also takes support calls: give it the caller context too, so the
+  // tenant can ask about other things in the same call.
+  const caller = snapshot.tenant
+    ? await getCaller(db, snapshot.tenant.contact_id).catch(() => null)
+    : null
+  const support = await supportContext(db, caller)
   // Only what the agent needs to hold the conversation – no rent, no owner data.
   return {
+    ...support,
+    call_purpose: "move_in_offer",
+    unit_id: view.run.unitId,
     workflow_id: runId,
     tenant_first_name: (snapshot.tenant?.name ?? "").split(" ")[0] ?? "",
     tenant_language: snapshot.tenant?.language ?? "de",
@@ -103,6 +114,17 @@ export async function startCall(db: DB, runId: string) {
           to_number: to!.replace(/\s+/g, ""),
           conversation_initiation_client_data: {
             dynamic_variables: dynamicVariables,
+            conversation_config_override: {
+              agent: {
+                language:
+                  dynamicVariables!.tenant_language === "de" ? "de" : "en",
+                first_message: moveInGreeting(
+                  dynamicVariables!.tenant_language,
+                  dynamicVariables!.tenant_first_name,
+                  dynamicVariables!.move_in_date
+                ),
+              },
+            },
           },
         }),
         signal: AbortSignal.timeout(15_000),

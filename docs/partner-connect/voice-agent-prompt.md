@@ -1,3 +1,5 @@
+> Superseded by [docs/voice-agent.md](../voice-agent.md): one agent now handles support calls and the move-in offer. Kept for the history of the first demo.
+
 # ElevenLabs agent setup
 
 ## System prompt
