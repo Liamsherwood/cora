@@ -23,7 +23,7 @@ export async function generateMetadata({
   const title = isLocale(locale)
     ? (await getMessages(locale)).directory.title
     : "Directory"
-  return { title: `${title} · Cora`, robots: { index: false, follow: false } }
+  return { title: `${title} · Centrix`, robots: { index: false, follow: false } }
 }
 
 const one = (v: string | string[] | undefined) =>

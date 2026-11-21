@@ -10,6 +10,9 @@ export function isUuid(v: unknown): v is string {
 
 export { randomUUID as newId } from "node:crypto"
 
+export const caseRef = (id: string) => `C-${id.slice(0, 6).toUpperCase()}`
+export const ticketRef = (id: string) => `T-${id.slice(0, 6).toUpperCase()}`
+
 /**
  * Deterministic, name-based UUID (SHA-256, version 8 layout): the same name always gives
  * the same id. Used for event ids, so firing the same moment twice is one event.

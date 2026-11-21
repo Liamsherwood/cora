@@ -13,7 +13,7 @@ export async function generateMetadata({
   const { locale } = await params
   if (!isLocale(locale)) notFound()
   const { privacy } = await getMessages(locale)
-  return { title: `${privacy.title} · Cora`, description: privacy.intro }
+  return { title: `${privacy.title} · Centrix`, description: privacy.intro }
 }
 
 export default async function PrivacyPage({
@@ -27,7 +27,7 @@ export default async function PrivacyPage({
     <main className="mx-auto max-w-3xl px-5 py-8 sm:px-10 sm:py-14">
       <nav className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b border-border pb-5 text-sm">
         <Link href={`/${locale}`} className="font-medium hover:underline">
-          Cora
+          Centrix
         </Link>
         <div className="flex gap-4">
           {locales.map((language) => (

@@ -1,13 +1,13 @@
 const en = {
   metadata: {
-    title: "Cora · Property management",
+    title: "Centrix · Property management",
     description:
       "Manage properties, rent collection, and maintenance in one workspace.",
   },
   privacy: {
     title: "Privacy policy",
     intro:
-      "This notice explains how the CORA demo handles personal data on this website and in its WhatsApp assistant. Please use fictional details when testing the demo.",
+      "This notice explains how the Cora demo handles personal data on this website and in its WhatsApp and voice assistants. Please use fictional details when testing the demo.",
     contact: {
       title: "Who is responsible for your data",
       description:
@@ -35,6 +35,7 @@ const en = {
         title: "Partner Connect demo",
         paragraphs: [
           "Partner Connect uses demo property and tenant records and stores interactions such as offer decisions and simulated orders in the demo database. Where the optional voice feature is enabled and used, ElevenLabs and its telephony provider Twilio may receive the destination phone number, voice interaction and the offer details needed for the call.",
+          "When you report a maintenance issue by voice, ElevenLabs processes the conversation. Cora can save a summary, classification, linked property case and ElevenLabs conversation ID in the password-protected staff inbox so staff can review the report and track its resolution.",
           "Demo workflow records can be cleared through the demo reset. Technical logs and provider records are kept according to the relevant service’s retention settings. If you contact us about privacy, we retain your correspondence as needed to handle the request and meet applicable obligations.",
         ],
       },
@@ -63,7 +64,7 @@ const en = {
       overview: "Overview",
       properties: "Properties",
       maintenance: "Maintenance",
-      tickets: "Tickets",
+      tickets: "Cora",
       rent: "Rent collection",
       services: "Directory",
     },
@@ -130,7 +131,7 @@ const en = {
     },
     skipToContent: "Skip to content",
     closeDialog: "Close dialog",
-    coraOverview: "Cora overview",
+    centrixOverview: "Centrix overview",
     portfolio: "Portfolio",
     workspace: "Workspace",
     currentWorkspaceView: "Current workspace view",
@@ -170,9 +171,12 @@ const en = {
     active: "Active",
     activeRequests: "Active requests",
     noRequests: "No requests to show.",
-    needsAttention: "Needs attention",
-    attentionCount: "Needs attention ({count})",
-    viewAttentionQueue: "View attention queue",
+    coraActivity: {
+      title: "Cora activity",
+      demo: "Demo",
+      empty: "No recent activity from Cora.",
+      openInbox: "Open ticket inbox",
+    },
     managedUnits: "{count} units under management",
     occupancy: "Occupancy",
     simulatedCollections: "Simulated collections",
@@ -240,9 +244,9 @@ const en = {
       heating: "Heating",
       energyClass: "Energy class",
       meter: "Meter",
-      fireMoveIn: "Simulate move-in",
+      fireMoveIn: "Start move-in workflow",
       contracts: "Service contracts on this unit",
-      noContracts: "None yet. Simulate the move-in to start.",
+      noContracts: "No service contracts yet.",
       contractTerms: "{partner} · {price}/mo · from {date}",
       consentVia: "Consent via {channel}: {fields}",
       withdrawn: "withdrawn",
@@ -334,14 +338,29 @@ const en = {
     },
   },
   tickets: {
-    title: "Maintenance tickets",
+    title: "Cora",
     description:
-      "Review reports from Cora’s WhatsApp assistant and trace its replies.",
+      "Cora is the Centrix agent for maintenance reports by phone and WhatsApp.",
     inbox: "Ticket inbox",
-    demoDescription:
-      "Try resolving an example ticket and review its simulated WhatsApp activity.",
-    demoSummary:
-      "The kitchen tap in unit 4B is leaking. The tenant shut off the water under the sink.",
+    demo: {
+      titles: {
+        utilityEnquiries: "Internet & electricity",
+      },
+      summaries: {
+        utilityEnquiries: [
+          "The Reltix assistant called Liam Sherwood about internet for his move to Musterstraße 12. Liam also asked about electricity.",
+          "The assistant ordered Example Fibre’s Fibre 500 plan (500 Mbps, €34.99 per month, 24 months, router included) after Liam agreed to share his name, new address, move-in date and email with Example Fibre.",
+          "Fibre activation is expected on 4 December. A free 5G router is due by 24 November to provide internet from the 1 December move-in until fibre goes live. If installation requires access, Example Fibre will offer a time slot in the tenant portal.",
+          "The assistant added an electricity offer from the local Stadtwerk to the tenant portal. Liam can accept it there. The assistant explained that he would otherwise move onto the more expensive default tariff if he chose no supplier.",
+        ].join("\n\n"),
+        tap: "The kitchen tap in unit 4B is leaking. The tenant shut off the water under the sink.",
+        heating:
+          "The heating in unit 2A stopped working overnight. All radiators are cold.",
+        lift: "The lift is out of service. The doors stay closed on the ground floor, and no one is trapped.",
+        lighting:
+          "The lights in the shared stairwell between the first and second floors went out.",
+      },
+    },
     empty: "No tickets on this page.",
     report: "Maintenance report",
     unassigned: "Tenancy unassigned",
@@ -359,25 +378,54 @@ const en = {
     opened: "Opened",
     resolved: "Resolved",
     markResolved: "Mark as resolved",
-    trace: "Agent activity",
+    trace: "Cora activity",
     activity: {
-      incoming: "Reviewing incoming WhatsApp messages",
-      reviewing: "Reviewing message",
+      incoming: "Reviewing incoming reports",
+      reviewing: "Reviewing report",
       sending: "Sending reply",
+      orbAction: "Nudge Cora’s orb",
+      avatarAction: "Nudge Cora",
     },
     runDetails: "Run details",
     model: "Model",
     runId: "Run ID",
     gatewayGenerationId: "AI Gateway generation ID",
+    conversationId: "ElevenLabs conversation ID",
     previous: "Previous",
     next: "Next",
-    agents: { "cora-whatsapp": "Cora · WhatsApp" },
+    channels: {
+      "cora-whatsapp": "WhatsApp",
+      "cora-voice": "Phone",
+    },
+    classification: {
+      category: {
+        heating: "Heating",
+        plumbing: "Plumbing",
+        electrical: "Electrical",
+        internet: "Internet",
+        damp_mould: "Damp and mould",
+        pests: "Pests",
+        appliance: "Appliance",
+        elevator: "Lift",
+        access_keys: "Access and keys",
+        noise: "Noise",
+        other: "Other",
+      },
+      priority: {
+        low: "Low",
+        normal: "Normal",
+        high: "High",
+        emergency: "Emergency",
+      },
+      scope: { unit: "Private unit", common: "Shared area" },
+    },
     change: { opened: "Ticket opened", updated: "Ticket updated" },
     fallbackReply: "Fallback reply",
     send: {
       unconfirmed: "Send unconfirmed",
       accepted: "Sent to WhatsApp",
       failed: "Send failed",
+      returned: "Voice tool completed",
     },
   },
 }

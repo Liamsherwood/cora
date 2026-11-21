@@ -73,13 +73,3 @@ export function urgentRequests(requests: Request[]) {
     ({ priority, status }) => priority === "Urgent" && status !== "Resolved"
   )
 }
-
-export function attentionRequests(requests: Request[]) {
-  return [
-    ...urgentRequests(requests),
-    ...requests.filter(
-      ({ status, priority }) =>
-        status === "Awaiting vendor" && priority !== "Urgent"
-    ),
-  ]
-}

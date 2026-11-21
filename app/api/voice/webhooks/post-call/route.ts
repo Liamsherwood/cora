@@ -2,6 +2,7 @@ import { handle } from "@/lib/api"
 import * as t from "@/lib/db/schema"
 import { AppError } from "@/lib/errors"
 import { isUuid, nameUuid } from "@/lib/ids"
+import { finishTicketIntake, voiceIntakeId } from "@/lib/tickets/activity"
 import { verifyElevenLabsSignature } from "@/lib/voice/auth"
 
 type PostCall = {
@@ -42,6 +43,13 @@ export async function POST(req: Request) {
       return { stored: false, reason: "ignored type" }
 
     const d = body.data ?? {}
+    if (typeof d.conversation_id === "string" && d.conversation_id) {
+      await finishTicketIntake(db, voiceIntakeId(d.conversation_id)).catch(
+        () => {
+          console.error("Voice ticket activity cleanup failed")
+        }
+      )
+    }
     const vars = d.conversation_initiation_client_data?.dynamic_variables ?? {}
     const unitId = String(vars.unit_id ?? "")
     const partyId = String(vars.party_id ?? "")

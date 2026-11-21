@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils"
 export const DropdownMenu = Menu.Root
 export const DropdownMenuTrigger = Menu.Trigger
 export const DropdownMenuRadioGroup = Menu.RadioGroup
+export const DropdownMenuSeparator = Menu.Separator
 
 export function DropdownMenuContent({
   children,

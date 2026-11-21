@@ -3,6 +3,7 @@ import {
   boolean,
   check,
   index,
+  jsonb,
   pgTable,
   text,
   timestamp,
@@ -11,6 +12,7 @@ import {
 } from "drizzle-orm/pg-core"
 
 import { cases } from "./operations"
+import type { TicketClassification } from "@/lib/tickets/classification"
 
 export const maintenanceTickets = pgTable(
   "maintenance_tickets",
@@ -21,6 +23,7 @@ export const maintenanceTickets = pgTable(
       .references(() => cases.id),
     threadKey: text("thread_key").notNull(),
     summary: text("summary").notNull(),
+    classification: jsonb("classification").$type<TicketClassification>(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -60,9 +63,11 @@ export const ticketAgentRuns = pgTable(
       .notNull()
       .references(() => maintenanceTickets.id, { onDelete: "cascade" }),
     messageKey: text("message_key").notNull().unique(),
-    agent: text("agent", { enum: ["cora-whatsapp"] }).notNull(),
-    model: text("model").notNull(),
+    agent: text("agent", { enum: ["cora-whatsapp", "cora-voice"] }).notNull(),
+    model: text("model"),
     gatewayGenerationId: text("gateway_generation_id"),
+    conversationId: text("conversation_id"),
+    classification: jsonb("classification").$type<TicketClassification>(),
     startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
     ticketChange: text("ticket_change", {
       enum: ["opened", "updated", "none"],
@@ -71,7 +76,7 @@ export const ticketAgentRuns = pgTable(
       enum: ["generated", "fallback"],
     }).notNull(),
     sendStatus: text("send_status", {
-      enum: ["unconfirmed", "accepted", "failed"],
+      enum: ["unconfirmed", "accepted", "failed", "returned"],
     })
       .notNull()
       .default("unconfirmed"),
@@ -92,7 +97,7 @@ export const ticketAgentRuns = pgTable(
     ),
     check(
       "ticket_agent_runs_send_status",
-      sql`${table.sendStatus} IN ('unconfirmed', 'accepted', 'failed')`
+      sql`${table.sendStatus} IN ('unconfirmed', 'accepted', 'failed', 'returned')`
     ),
   ]
 ).enableRLS()

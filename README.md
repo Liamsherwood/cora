@@ -149,30 +149,30 @@ for staff review.
    [Meta webhook setup](https://developers.facebook.com/documentation/business-messaging/whatsapp/webhooks/create-webhook-endpoint)
 5. From your own WhatsApp account, send the business number `Test!`. Cora sends
    back `Received: Test!` through Meta's API without calling AI Gateway. To test
-   the assistant, send “My kitchen tap is leaking.” Cora should reply with a
-   follow-up question. Reply with another detail to test conversation context.
+   the assistant, send “My kitchen tap is leaking.” When `TICKETING_THREAD_SECRET` is set,
+   Cora includes the saved ticket reference in the reply. Reply with another
+   detail to test conversation context.
 
 ### Maintenance ticket inbox
 
-Open **Tickets** in the dashboard to review the example report, explore its
-simulated WhatsApp activity, and try resolving the ticket. The example is
-available without a password when `DEMO_MODE=true` or no staff password is set.
+Open **Tickets** in the dashboard to see new Cora tickets alongside the example
+reports from WhatsApp and phone. The inbox refreshes while it is open. For
+incoming reports, it shows the category, priority, scope, status and references.
+The activity history shows the channel and outcome of each step.
 
-To connect the live WhatsApp inbox, apply the database migrations, leave
-`DEMO_MODE` unset, and set `TICKETING_STAFF_PASSWORD` and
-`TICKETING_THREAD_SECRET` to separate random values. Keep the thread secret
-stable so new messages can be matched to existing tickets. Sign in as `staff`
-with the configured password. Use HTTPS for hosted access.
+Apply the database migrations and set `TICKETING_THREAD_SECRET` to a stable
+random value to link WhatsApp messages to the same ticket.
 
-Send the assistant a fictional maintenance report to open a ticket. While it is
-open, relevant follow-ups update the same ticket and the activity history shows
-the agent, model, AI Gateway generation ID when available, and WhatsApp send outcome.
+Relevant WhatsApp follow-ups update the open ticket.
 When the WhatsApp sender's international phone number matches one active tenant
 and unit in the portfolio, Cora creates and links a case for that tenancy.
 Staff can assign unmatched or ambiguous reports from the ticket detail panel.
 The inbox shows the tenant, property, unit and case reference for linked tickets.
 Resolving the ticket also resolves its linked case. A later maintenance report
 can open a new ticket for the same conversation.
+
+For phone intake, sync the ElevenLabs agent after deploying the ticket API.
+[ElevenLabs setup](docs/voice-agent.md)
 
 ## Database
 

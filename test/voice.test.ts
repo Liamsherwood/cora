@@ -1,13 +1,14 @@
 import { createHmac } from "node:crypto"
 
-import { eq } from "drizzle-orm"
+import { and, eq, sql } from "drizzle-orm"
 import { afterAll, beforeEach, describe, expect, it } from "vitest"
 
 import type { DB } from "@/lib/db"
 import * as t from "@/lib/db/schema"
+import { caseRef } from "@/lib/ids"
+import { getTicket, listTicketRuns } from "@/lib/tickets/repository"
 import { verifyElevenLabsSignature } from "@/lib/voice/auth"
 import {
-  caseRef,
   findCallerByNameAndStreet,
   findCallerByPhone,
   findCase,
@@ -86,15 +87,39 @@ describe("caller lookup", () => {
 describe("cases by voice", () => {
   it("files a case, then finds it among open cases and by reference", async () => {
     const lena = await getCaller(db, LENA)
-    const r = await reportIssue(db, lena, {
+    const issue = {
       category: "heating",
       priority: "high",
       scope: "unit",
       description: "Die Heizung im Wohnzimmer bleibt kalt.",
       summary: "Living room radiator stays cold.",
       conversation_id: "conv_test",
-    })
+    } as const
+    const [r, replay] = await Promise.all([
+      reportIssue(db, lena, issue),
+      reportIssue(db, lena, issue),
+    ])
+    expect(replay).toEqual(r)
     expect(r.reference).toBe(caseRef(r.case_id))
+    const classification = {
+      category: "heating",
+      priority: "high",
+      scope: "unit",
+    }
+    expect(await getTicket(db, r.ticket_id)).toMatchObject({
+      caseId: r.case_id,
+      classification,
+      summary: issue.summary,
+    })
+    expect(await listTicketRuns(db, r.ticket_id)).toMatchObject([
+      {
+        agent: "cora-voice",
+        conversationId: "conv_test",
+        classification,
+        ticketChange: "opened",
+        sendStatus: "returned",
+      },
+    ])
 
     const [row] = await db
       .select()
@@ -108,10 +133,15 @@ describe("cases by voice", () => {
     const events = await db
       .select()
       .from(t.events)
-      .where(eq(t.events.type, "case.created"))
+      .where(
+        and(
+          eq(t.events.type, "case.created"),
+          sql`${t.events.payload}->>'conversation_id' = ${issue.conversation_id}`
+        )
+      )
     expect(
       events.map((e) => (e.payload as { case_id: string }).case_id)
-    ).toContain(r.case_id)
+    ).toEqual([r.case_id])
 
     const open = await openCases(db, lena)
     expect(open[0]).toMatchObject({

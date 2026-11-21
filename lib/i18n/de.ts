@@ -2,14 +2,14 @@ import type en from "./en"
 
 export default {
   metadata: {
-    title: "Cora · Immobilienverwaltung",
+    title: "Centrix · Immobilienverwaltung",
     description:
       "Verwalten Sie Immobilien, Mieteingänge und Instandhaltung zentral an einem Ort.",
   },
   privacy: {
     title: "Datenschutzerklärung",
     intro:
-      "Diese Datenschutzerklärung beschreibt, wie die CORA-Demo personenbezogene Daten auf dieser Website und im WhatsApp-Assistenten verarbeitet. Bitte verwenden Sie beim Testen erfundene Angaben.",
+      "Diese Datenschutzerklärung beschreibt, wie die Cora-Demo personenbezogene Daten auf dieser Website sowie im WhatsApp- und Sprachassistenten verarbeitet. Bitte verwenden Sie beim Testen erfundene Angaben.",
     contact: {
       title: "Wer für Ihre Daten verantwortlich ist",
       description:
@@ -37,6 +37,7 @@ export default {
         title: "Partner Connect Demo",
         paragraphs: [
           "Partner Connect verwendet Demo-Datensätze zu Objekten und Mietparteien und speichert Interaktionen wie Angebotsentscheidungen und simulierte Bestellungen in der Demo-Datenbank. Wird die optionale Sprachfunktion aktiviert und verwendet, können ElevenLabs und dessen Telefonieanbieter Twilio die Zieltelefonnummer, die Sprachinteraktion und die für das Gespräch erforderlichen Angebotsdaten erhalten.",
+          "Wenn Sie eine Instandhaltungsmeldung per Sprache abgeben, verarbeitet ElevenLabs das Gespräch. Cora kann eine Zusammenfassung, die Einstufung, den verknüpften Vorgang zum Objekt und die ElevenLabs-Gesprächs-ID im passwortgeschützten Postfach speichern. Die Verwaltung kann dort die Meldung prüfen und die Bearbeitung verfolgen.",
           "Die Demo-Vorgänge können über die Zurücksetzfunktion gelöscht werden. Für technische Protokolle und Aufzeichnungen der Anbieter gelten die Aufbewahrungseinstellungen des jeweiligen Dienstes. Ihre Datenschutzanfragen bewahren wir so lange auf, wie es zur Bearbeitung und zur Erfüllung geltender Pflichten erforderlich ist.",
         ],
       },
@@ -65,7 +66,7 @@ export default {
       overview: "Übersicht",
       properties: "Objekte",
       maintenance: "Instandhaltung",
-      tickets: "Tickets",
+      tickets: "Cora",
       rent: "Mieteingang",
       services: "Verzeichnis",
     },
@@ -133,7 +134,7 @@ export default {
     },
     skipToContent: "Zum Inhalt springen",
     closeDialog: "Dialog schließen",
-    coraOverview: "Cora-Übersicht",
+    centrixOverview: "Centrix-Übersicht",
     portfolio: "Portfolio",
     workspace: "Arbeitsbereich",
     currentWorkspaceView: "Aktuelle Ansicht im Arbeitsbereich",
@@ -174,9 +175,12 @@ export default {
     active: "Laufend",
     activeRequests: "Laufende Meldungen",
     noRequests: "Keine Meldungen vorhanden.",
-    needsAttention: "Handlungsbedarf",
-    attentionCount: "Handlungsbedarf ({count})",
-    viewAttentionQueue: "Meldungen mit Handlungsbedarf ansehen",
+    coraActivity: {
+      title: "Coras Aktivitäten",
+      demo: "Demo",
+      empty: "Keine neuen Aktivitäten von Cora.",
+      openInbox: "Ticketpostfach öffnen",
+    },
     managedUnits: "{count} Einheiten in Verwaltung",
     occupancy: "Belegung",
     simulatedCollections: "Simulierte Mieteingänge",
@@ -244,9 +248,9 @@ export default {
       heating: "Heizung",
       energyClass: "Energieklasse",
       meter: "Zähler",
-      fireMoveIn: "Einzug simulieren",
+      fireMoveIn: "Einzugsprozess starten",
       contracts: "Serviceverträge dieser Einheit",
-      noContracts: "Noch keine. Simuliere den Einzug, um zu starten.",
+      noContracts: "Noch keine Serviceverträge.",
       contractTerms: "{partner} · {price}/Monat · ab {date}",
       consentVia: "Einwilligung per {channel}: {fields}",
       withdrawn: "widerrufen",
@@ -339,14 +343,29 @@ export default {
     },
   },
   tickets: {
-    title: "Instandhaltungstickets",
+    title: "Cora",
     description:
-      "Prüfen Sie Meldungen des Cora-Assistenten und verfolgen Sie seine Antworten auf WhatsApp.",
+      "Cora ist der Centrix-Assistent für Instandhaltungsmeldungen per Telefon und WhatsApp.",
     inbox: "Ticketpostfach",
-    demoDescription:
-      "Schließen Sie ein Beispielticket ab und sehen Sie sich den simulierten WhatsApp-Verlauf an.",
-    demoSummary:
-      "Der Küchenwasserhahn in Wohnung 4B tropft. Die Mietpartei hat das Wasser unter der Spüle abgestellt.",
+    demo: {
+      titles: {
+        utilityEnquiries: "Internet & Strom",
+      },
+      summaries: {
+        utilityEnquiries: [
+          "Der Reltix-Assistent rief Liam Sherwood an, um das Internet für seinen Einzug in die Musterstraße 12 zu besprechen. Liam fragte auch nach der Stromversorgung.",
+          "Der Assistent bestellte den Tarif Fibre 500 von Example Fibre (500 Mbit/s, 34,99 € pro Monat, 24 Monate Laufzeit, Router inklusive). Liam hatte zugestimmt, dass sein Name, seine neue Adresse, sein Einzugsdatum und seine E-Mail-Adresse an Example Fibre weitergegeben werden.",
+          "Der Glasfaseranschluss soll am 4. Dezember freigeschaltet werden. Ein kostenloser 5G-Router soll bis zum 24. November eintreffen und die Zeit vom Einzug am 1. Dezember bis zur Freischaltung überbrücken. Falls für die Installation Zugang zur Wohnung nötig ist, schlägt Example Fibre im Mieterportal einen Termin vor.",
+          "Der Assistent hinterlegte im Mieterportal ein Stromangebot des örtlichen Stadtwerks. Liam kann es dort annehmen. Der Assistent erklärte, dass Liam ohne Anbieterwahl in den teureren Grundversorgungstarif fallen würde.",
+        ].join("\n\n"),
+        tap: "Der Küchenwasserhahn in Wohnung 4B tropft. Die Mietpartei hat das Wasser unter der Spüle abgestellt.",
+        heating:
+          "Die Heizung in Wohnung 2A ist über Nacht ausgefallen. Alle Heizkörper sind kalt.",
+        lift: "Der Aufzug ist außer Betrieb. Die Türen im Erdgeschoss bleiben geschlossen. Es ist niemand eingeschlossen.",
+        lighting:
+          "Im gemeinsamen Treppenhaus zwischen dem ersten und zweiten Stock ist die Beleuchtung ausgefallen.",
+      },
+    },
     empty: "Keine Tickets auf dieser Seite.",
     report: "Instandhaltungsmeldung",
     unassigned: "Mietverhältnis nicht zugeordnet",
@@ -364,25 +383,54 @@ export default {
     opened: "Erstellt",
     resolved: "Erledigt",
     markResolved: "Als erledigt markieren",
-    trace: "Assistentenverlauf",
+    trace: "Coras Aktivitäten",
     activity: {
-      incoming: "Eingehende WhatsApp-Nachrichten werden geprüft",
-      reviewing: "Nachricht wird geprüft",
+      incoming: "Eingehende Meldungen werden geprüft",
+      reviewing: "Meldung wird geprüft",
       sending: "Antwort wird gesendet",
+      orbAction: "Coras Kugel antippen",
+      avatarAction: "Cora antippen",
     },
     runDetails: "Verarbeitungsdetails",
     model: "Modell",
     runId: "Verarbeitungs-ID",
     gatewayGenerationId: "Generierungs-ID von AI Gateway",
+    conversationId: "ElevenLabs-Gesprächs-ID",
     previous: "Zurück",
     next: "Weiter",
-    agents: { "cora-whatsapp": "Cora · WhatsApp" },
+    channels: {
+      "cora-whatsapp": "WhatsApp",
+      "cora-voice": "Telefon",
+    },
+    classification: {
+      category: {
+        heating: "Heizung",
+        plumbing: "Sanitär",
+        electrical: "Elektrik",
+        internet: "Internet",
+        damp_mould: "Feuchtigkeit und Schimmel",
+        pests: "Schädlinge",
+        appliance: "Haushaltsgerät",
+        elevator: "Aufzug",
+        access_keys: "Zugang und Schlüssel",
+        noise: "Lärm",
+        other: "Sonstiges",
+      },
+      priority: {
+        low: "Niedrig",
+        normal: "Normal",
+        high: "Hoch",
+        emergency: "Notfall",
+      },
+      scope: { unit: "Private Einheit", common: "Gemeinschaftsbereich" },
+    },
     change: { opened: "Ticket erstellt", updated: "Ticket aktualisiert" },
     fallbackReply: "Ersatzantwort",
     send: {
       unconfirmed: "Versand unbestätigt",
       accepted: "An WhatsApp gesendet",
       failed: "Versand fehlgeschlagen",
+      returned: "Sprachtool abgeschlossen",
     },
   },
 } satisfies typeof en

@@ -5,15 +5,14 @@ import {
   ArrowRight01Icon,
   Calendar03Icon,
   Database01Icon,
-  Notification01Icon,
   Search01Icon,
-  Ticket01Icon,
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import type { ReactNode, Ref } from "react"
 
+import { CoraAvatar } from "@/components/tickets/cora-avatar"
 import { Button, buttonVariants } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -22,13 +21,14 @@ import {
   DropdownMenuLinkItem,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { locales, localeSettings } from "@/lib/i18n/locales"
 import { cn } from "@/lib/utils"
 
 import { AppearanceSwitcher } from "./appearance-switcher"
-import { formatMessage, useDashboardLocale } from "./locale"
+import { useDashboardLocale } from "./locale"
 import type { RentPeriod } from "./rent-history"
 import { UserMenu } from "./user-menu"
 import { views, type Section, type View } from "./views"
@@ -41,13 +41,9 @@ export type { Section, View }
  */
 type ViewNavigation = { current: Section; onView?: (view: View) => void }
 
-/**
- * Workspace pages with their own route (server-rendered), after the dashboard views.
- * Tickets loads as a full page so the browser can answer its Basic auth challenge.
- */
-const pages = [
-  { id: "tickets", icon: Ticket01Icon, fullPageLoad: true },
-  { id: "services", icon: Database01Icon, fullPageLoad: false },
+const portfolioItems = [
+  ...views,
+  { id: "services", icon: Database01Icon },
 ] as const
 
 function viewHref(locale: string, view: View) {
@@ -61,7 +57,7 @@ function BrandButton({ onView }: { onView?: (view: View) => void }) {
     <button
       type="button"
       className="rounded-md"
-      aria-label={messages.coraOverview}
+      aria-label={messages.centrixOverview}
       onClick={() => onView("overview")}
     >
       <Brand />
@@ -70,7 +66,7 @@ function BrandButton({ onView }: { onView?: (view: View) => void }) {
     <Link
       href={`/${locale}`}
       className="inline-block rounded-md"
-      aria-label={messages.coraOverview}
+      aria-label={messages.centrixOverview}
     >
       <Brand />
     </Link>
@@ -79,21 +75,8 @@ function BrandButton({ onView }: { onView?: (view: View) => void }) {
 
 function Brand() {
   return (
-    <span className="inline-flex items-center gap-2.5">
-      <span
-        aria-hidden="true"
-        className="grid size-8 place-items-center rounded-[9px] bg-accent text-accent-foreground"
-      >
-        <span className="grid -rotate-12 grid-cols-2 gap-[2px]">
-          <span className="size-1.5 rounded-tl-full rounded-br-full bg-current" />
-          <span className="size-1.5 rounded-tr-full rounded-bl-full bg-current" />
-          <span className="size-1.5 rounded-tr-full rounded-bl-full bg-current" />
-          <span className="size-1.5 rounded-tl-full rounded-br-full bg-current" />
-        </span>
-      </span>
-      <span className="text-[25px] leading-none font-medium tracking-[-0.06em]">
-        cora<span className="text-primary">.</span>
-      </span>
+    <span className="inline-flex min-h-8 items-center text-[25px] leading-none font-medium tracking-[-0.06em]">
+      Centrix
     </span>
   )
 }
@@ -106,53 +89,63 @@ function Navigation({ current, onView }: ViewNavigation) {
       ? "bg-accent font-medium text-accent-foreground hover:bg-accent hover:text-accent-foreground"
       : "text-muted-foreground"
   return (
-    <nav aria-label={messages.workspace} className="space-y-1">
-      {views.map(({ id, icon }) => {
-        const className = cn(itemClass, itemState(id))
-        const content = (
-          <>
-            <HugeiconsIcon icon={icon} className="size-[17px]" />
-            {messages.nav[id]}
-          </>
-        )
-        return onView ? (
-          <Button
-            key={id}
-            variant="ghost"
-            aria-current={id === current ? "page" : undefined}
-            onClick={() => onView(id)}
-            className={className}
-          >
-            {content}
-          </Button>
-        ) : (
-          <Link
-            key={id}
-            href={viewHref(locale, id)}
-            className={cn(buttonVariants({ variant: "ghost" }), className)}
-          >
-            {content}
-          </Link>
-        )
-      })}
-      {pages.map(({ id, icon, fullPageLoad }) => {
-        const LinkTag = fullPageLoad ? "a" : Link
-        return (
-          <LinkTag
-            key={id}
-            href={`/${locale}/${id}`}
-            aria-current={id === current ? "page" : undefined}
-            className={cn(
-              buttonVariants({ variant: "ghost" }),
-              itemClass,
-              itemState(id)
-            )}
-          >
-            <HugeiconsIcon icon={icon} className="size-[17px]" />
-            {messages.nav[id]}
-          </LinkTag>
-        )
-      })}
+    <nav aria-label={messages.workspace} className="px-3.5">
+      {/* A full navigation lets the browser answer the inbox's Basic auth challenge. */}
+      <a
+        href={`/${locale}/tickets`}
+        aria-current={current === "tickets" ? "page" : undefined}
+        className={cn(
+          buttonVariants({ variant: "ghost" }),
+          itemClass,
+          itemState("tickets"),
+          "gap-2"
+        )}
+      >
+        <CoraAvatar size={20} />
+        {messages.nav.tickets}
+      </a>
+      <hr className="mx-3 mt-2 mb-3 border-border" />
+      <p className="mb-2 px-3 text-xs font-medium text-muted-foreground">
+        {messages.portfolio}
+      </p>
+      <div className="space-y-1">
+        {portfolioItems.map(({ id, icon }) => {
+          const className = cn(itemClass, itemState(id))
+          const ariaCurrent = id === current ? "page" : undefined
+          const content = (
+            <>
+              <HugeiconsIcon
+                icon={icon}
+                className="size-[17px]"
+                aria-hidden="true"
+              />
+              {messages.nav[id]}
+            </>
+          )
+          return id !== "services" && onView ? (
+            <Button
+              key={id}
+              variant="ghost"
+              aria-current={ariaCurrent}
+              onClick={() => onView(id)}
+              className={className}
+            >
+              {content}
+            </Button>
+          ) : (
+            <Link
+              key={id}
+              href={
+                id === "services" ? `/${locale}/services` : viewHref(locale, id)
+              }
+              aria-current={ariaCurrent}
+              className={cn(buttonVariants({ variant: "ghost" }), className)}
+            >
+              {content}
+            </Link>
+          )
+        })}
+      </div>
     </nav>
   )
 }
@@ -177,9 +170,19 @@ function WorkspaceNavigationMenu({ current, onView }: ViewNavigation) {
           />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
-          {[...views, ...pages].map((item) => {
-            const { id, icon } = item
-            const view = "fullPageLoad" in item ? null : item.id
+          <DropdownMenuLinkItem
+            href={`/${locale}/tickets`}
+            className={cn(
+              "min-h-11 gap-1",
+              current === "tickets" && "bg-muted font-medium"
+            )}
+            aria-current={current === "tickets" ? "page" : undefined}
+          >
+            <CoraAvatar size={20} />
+            {messages.nav.tickets}
+          </DropdownMenuLinkItem>
+          <DropdownMenuSeparator className="mx-2.5 my-1 h-px bg-border" />
+          {portfolioItems.map(({ id, icon }) => {
             const ariaCurrent = id === current ? "page" : undefined
             const className = cn(
               "min-h-11",
@@ -192,11 +195,11 @@ function WorkspaceNavigationMenu({ current, onView }: ViewNavigation) {
               </>
             )
 
-            if (view && onView) {
+            if (id !== "services" && onView) {
               return (
                 <DropdownMenuItem
                   key={id}
-                  onClick={() => onView(view)}
+                  onClick={() => onView(id)}
                   className={className}
                   aria-current={ariaCurrent}
                 >
@@ -205,13 +208,13 @@ function WorkspaceNavigationMenu({ current, onView }: ViewNavigation) {
               )
             }
 
-            const href = view ? viewHref(locale, view) : `/${locale}/${id}`
-            const fullPageLoad = "fullPageLoad" in item && item.fullPageLoad
+            const href =
+              id === "services" ? `/${locale}/services` : viewHref(locale, id)
             return (
               <DropdownMenuLinkItem
                 key={id}
                 href={href}
-                render={fullPageLoad ? undefined : <Link href={href} />}
+                render={<Link href={href} />}
                 className={className}
                 aria-current={ariaCurrent}
               >
@@ -226,18 +229,12 @@ function WorkspaceNavigationMenu({ current, onView }: ViewNavigation) {
 }
 
 export function Sidebar({ current, onView }: ViewNavigation) {
-  const { messages } = useDashboardLocale()
   return (
     <aside className="sticky top-0 hidden h-svh w-[218px] shrink-0 flex-col border-r border-border bg-sidebar md:flex xl:w-[224px]">
-      <div className="px-6 pt-6 pb-9">
+      <div className="px-6 pt-6 pb-7">
         <BrandButton onView={onView} />
       </div>
-      <div className="px-3.5">
-        <p className="mb-2 px-3 text-xs font-medium text-muted-foreground">
-          {messages.portfolio}
-        </p>
-        <Navigation current={current} onView={onView} />
-      </div>
+      <Navigation current={current} onView={onView} />
       <div className="mt-auto border-t border-border px-3.5 py-3.5">
         <UserMenu />
       </div>
@@ -249,15 +246,10 @@ export function WorkspaceHeader({
   current,
   onView,
   onSearch,
-  onAttention,
-  attentionCount = 0,
 }: ViewNavigation & {
-  /** Search and the attention queue are dashboard dialogs; hidden elsewhere. */
   onSearch?: () => void
-  onAttention?: () => void
-  attentionCount?: number
 }) {
-  const { locale, messages, format } = useDashboardLocale()
+  const { locale, messages } = useDashboardLocale()
   const pathname = usePathname()
   const routeSuffix = pathname.slice(locale.length + 1)
   return (
@@ -296,25 +288,6 @@ export function WorkspaceHeader({
               </kbd>
             </Button>
           )}
-          {onAttention && (
-            <Button
-              variant="outline"
-              size="icon"
-              className="relative text-muted-foreground"
-              aria-label={formatMessage(messages.attentionCount, {
-                count: format.number(attentionCount),
-              })}
-              onClick={onAttention}
-            >
-              <HugeiconsIcon icon={Notification01Icon} />
-              {attentionCount > 0 && (
-                <span
-                  aria-hidden="true"
-                  className="absolute top-1.5 right-[7px] size-1.5 rounded-full bg-destructive ring-2 ring-card"
-                />
-              )}
-            </Button>
-          )}
           {locales
             .filter((target) => target !== locale)
             .map((target) => (
@@ -351,18 +324,16 @@ export function WorkspaceShell({
   current,
   onView,
   onSearch,
-  onAttention,
-  attentionCount,
   title,
+  headingLeading,
   headingRef,
   description,
   actions,
   children,
 }: ViewNavigation & {
   onSearch?: () => void
-  onAttention?: () => void
-  attentionCount?: number
   title: ReactNode
+  headingLeading?: ReactNode
   headingRef?: Ref<HTMLHeadingElement>
   description?: ReactNode
   actions?: ReactNode
@@ -383,27 +354,28 @@ export function WorkspaceShell({
           current={current}
           onView={onView}
           onSearch={onSearch}
-          onAttention={onAttention}
-          attentionCount={attentionCount}
         />
         <main
           id="main-content"
           className="mx-auto w-full max-w-[1460px] px-4 pt-7 pb-10 sm:px-8 sm:pt-9"
         >
           <div className="mb-6 flex flex-wrap items-end justify-between gap-x-6 gap-y-4 sm:mb-7">
-            <div>
-              <h1
-                ref={headingRef}
-                tabIndex={headingRef ? -1 : undefined}
-                className="text-[30px] leading-[1.1] font-medium tracking-[-0.045em] focus:outline-none sm:text-[38px]"
-              >
-                {title}
-              </h1>
-              {description && (
-                <p className="mt-2 text-sm leading-5 text-muted-foreground sm:text-[15px]">
-                  {description}
-                </p>
-              )}
+            <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+              {headingLeading}
+              <div className="min-w-0">
+                <h1
+                  ref={headingRef}
+                  tabIndex={headingRef ? -1 : undefined}
+                  className="text-[30px] leading-[1.1] font-medium tracking-[-0.045em] focus:outline-none sm:text-[38px]"
+                >
+                  {title}
+                </h1>
+                {description && (
+                  <p className="mt-2 text-sm leading-5 text-muted-foreground sm:text-[15px]">
+                    {description}
+                  </p>
+                )}
+              </div>
             </div>
             {actions && (
               <div className="flex flex-wrap items-center gap-2.5">

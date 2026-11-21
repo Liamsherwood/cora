@@ -20,7 +20,6 @@ import { cn } from "@/lib/utils"
 
 import {
   activeRequests,
-  attentionRequests,
   urgentRequests,
   type Property,
   type Request,
@@ -37,18 +36,25 @@ import { updateRequests, useRequests } from "./request-store"
 import { MonthPicker, WorkspaceShell, type View } from "./workspace"
 
 type Overlay =
-  | { type: "search" | "new" | "attention" }
+  | { type: "search" | "new" }
   | { type: "property"; property: Property; returnRequestId?: string }
   | { type: "request"; request: Request; property?: Property }
 
-const requestFilters = ["active", "urgent", "attention", "resolved"] as const
+const requestFilters = [
+  "active",
+  "urgent",
+  "awaitingVendor",
+  "resolved",
+] as const
 type RequestFilter = (typeof requestFilters)[number]
 
 export function Dashboard({
   rentHistory,
+  coraActivity,
   initialView = "overview",
 }: {
   rentHistory: RentPeriod[]
+  coraActivity: React.ReactNode
   /** From `?view=`, so other workspace pages can link to a dashboard view. */
   initialView?: View
 }) {
@@ -65,7 +71,6 @@ export function Dashboard({
   const [announcement, setAnnouncement] = useState("")
   const requests = useRequests()
   const properties = useProperties()
-  const attention = attentionRequests(requests)
   const active = activeRequests(requests)
   const requestGroups = {
     active: { label: messages.active, requests: active },
@@ -73,7 +78,10 @@ export function Dashboard({
       label: messages.priority.Urgent,
       requests: urgentRequests(requests),
     },
-    attention: { label: messages.needsAttention, requests: attention },
+    awaitingVendor: {
+      label: messages.status["Awaiting vendor"],
+      requests: active.filter(({ status }) => status === "Awaiting vendor"),
+    },
     resolved: {
       label: messages.status.Resolved,
       requests: requests.filter(({ status }) => status === "Resolved"),
@@ -220,8 +228,6 @@ export function Dashboard({
       current={view}
       onView={changeView}
       onSearch={() => openOverlay({ type: "search" })}
-      onAttention={() => openOverlay({ type: "attention" })}
-      attentionCount={attention.length}
       title={heading.title}
       headingRef={pageHeading}
       description={"description" in heading ? heading.description : undefined}
@@ -239,12 +245,11 @@ export function Dashboard({
           onMonth={setMonth}
           rentHistory={rentHistory}
           requests={requests}
+          coraActivity={coraActivity}
           onProperty={openProperty}
-          onRequest={openRequest}
           onProperties={openProperties}
           onRent={() => changeView("rent", true)}
           onUrgent={() => openRequestQueue("urgent")}
-          onAttention={() => openRequestQueue("attention")}
         />
       )}
       {view === "properties" && (
@@ -338,16 +343,6 @@ export function Dashboard({
               onProperty={openProperty}
               onRequest={openRequest}
             />
-          )}
-          {overlay?.type === "attention" && (
-            <>
-              <DialogTitle className="pr-8 text-xl font-medium tracking-tight">
-                {messages.needsAttention}
-              </DialogTitle>
-              <div className="mt-2 max-h-[55svh] overflow-y-auto p-0.5">
-                <RequestList requests={attention} onRequest={openRequest} />
-              </div>
-            </>
           )}
           {overlay?.type === "property" && (
             <>

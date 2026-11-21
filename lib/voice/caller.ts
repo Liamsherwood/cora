@@ -11,10 +11,12 @@ import {
   sql,
 } from "drizzle-orm"
 
-import type { Exec } from "@/lib/db"
+import type { DB, Exec } from "@/lib/db"
 import * as t from "@/lib/db/schema"
 import { AppError, notFound } from "@/lib/errors"
-import { isUuid, newId } from "@/lib/ids"
+import { caseRef, isUuid, nameUuid, newId } from "@/lib/ids"
+import type { TicketClassification } from "@/lib/tickets/classification"
+import { saveTicketRun } from "@/lib/tickets/repository"
 import { addDays, clock, now, toDay } from "@/lib/time"
 
 /**
@@ -24,20 +26,6 @@ import { addDays, clock, now, toDay } from "@/lib/time"
  * never sees rent, owner data or other residents.
  */
 
-export const CASE_CATEGORIES = [
-  "heating",
-  "plumbing",
-  "electrical",
-  "internet",
-  "damp_mould",
-  "pests",
-  "appliance",
-  "elevator",
-  "access_keys",
-  "noise",
-  "other",
-] as const
-export const CASE_PRIORITIES = ["low", "normal", "high", "emergency"] as const
 const CLOSED = ["resolved", "closed", "cancelled"]
 export const VOICE_LANGUAGES = [
   "de",
@@ -56,9 +44,6 @@ export function phoneDigits(raw: string): string {
   else if (d.startsWith("0")) d = `49${d.slice(1)}` // German national format
   return d
 }
-
-/** Short spoken reference for a case: "C-1A2B3C". */
-export const caseRef = (id: string) => `C-${id.slice(0, 6).toUpperCase()}`
 
 type Home = {
   unit_id: string
@@ -355,11 +340,8 @@ export async function findCase(db: Exec, caller: Caller, reference: string) {
   return hit
 }
 
-export type NewIssue = {
+export type NewIssue = TicketClassification & {
   unit_id?: string
-  category: (typeof CASE_CATEGORIES)[number]
-  priority: (typeof CASE_PRIORITIES)[number]
-  scope: "unit" | "common"
   description: string
   summary: string
   conversation_id?: string
@@ -369,7 +351,7 @@ export type NewIssue = {
  * Files a case for the caller and records the `case.created` event, so it shows up for
  * the property manager and any partner subscribed to that trigger.
  */
-export async function reportIssue(db: Exec, caller: Caller, issue: NewIssue) {
+export async function reportIssue(db: DB, caller: Caller, issue: NewIssue) {
   const home =
     (issue.unit_id && caller.homes.find((h) => h.unit_id === issue.unit_id)) ||
     (!issue.unit_id ? caller.homes[0] : undefined)
@@ -379,40 +361,69 @@ export async function reportIssue(db: Exec, caller: Caller, issue: NewIssue) {
       403,
       "forbidden"
     )
-  const caseId = newId()
-  await db.transaction(async (tx) => {
-    await tx.insert(t.cases).values({
-      id: caseId,
-      propertyId: home.property_id,
-      unitId: issue.scope === "common" ? null : home.unit_id,
-      reporterPartyId: caller.party_id,
-      category: issue.category,
-      priority: issue.priority,
-      status: "open",
-    })
-    await tx.insert(t.events).values({
-      id: newId(),
-      type: "case.created",
-      unitId: home.unit_id,
-      partyId: caller.party_id,
-      occurredAt: clock(),
-      payload: {
-        case_id: caseId,
+  const classification = {
+    category: issue.category,
+    priority: issue.priority,
+    scope: issue.scope,
+  }
+  const reportKey = issue.conversation_id
+    ? nameUuid(
+        JSON.stringify([
+          "elevenlabs-report",
+          issue.conversation_id,
+          caller.party_id,
+          home.unit_id,
+          issue.scope,
+          issue.description.trim().replace(/\s+/g, " ").toLowerCase(),
+        ])
+      )
+    : newId()
+  const ticket = await saveTicketRun(db, {
+    threadKey: reportKey,
+    messageKey: reportKey,
+    agent: "cora-voice",
+    conversationId: issue.conversation_id,
+    replyType: "generated",
+    startedAt: clock(),
+    report: { kind: "report", summary: issue.summary, classification },
+    createVoiceCase: async (tx) => {
+      const caseId = newId()
+      await tx.insert(t.cases).values({
+        id: caseId,
+        propertyId: home.property_id,
+        unitId: issue.scope === "common" ? null : home.unit_id,
+        reporterPartyId: caller.party_id,
         category: issue.category,
         priority: issue.priority,
-        scope: issue.scope,
-        channel: "voice",
-        description: issue.description,
-        summary: issue.summary,
-        ...(issue.conversation_id
-          ? { conversation_id: issue.conversation_id }
-          : {}),
-      },
-    })
+        status: "open",
+      })
+      await tx.insert(t.events).values({
+        id: newId(),
+        type: "case.created",
+        unitId: home.unit_id,
+        partyId: caller.party_id,
+        occurredAt: clock(),
+        payload: {
+          case_id: caseId,
+          ...classification,
+          channel: "voice",
+          description: issue.description,
+          summary: issue.summary,
+          ...(issue.conversation_id
+            ? { conversation_id: issue.conversation_id }
+            : {}),
+        },
+      })
+      return caseId
+    },
   })
+  const caseId = ticket?.caseId
+  if (!caseId) throw new Error("Voice ticket was not linked to a case")
+
   return {
     reference: caseRef(caseId),
     case_id: caseId,
+    ticket_id: ticket.ticketId,
     where:
       issue.scope === "common"
         ? `${home.address}, common area`
@@ -420,7 +431,7 @@ export async function reportIssue(db: Exec, caller: Caller, issue: NewIssue) {
     next_step:
       issue.priority === "emergency"
         ? "Marked as an emergency for the property management team. If anyone is in danger, or there is fire or a smell of gas, call 112 now."
-        : "The property management team will review it and arrange a visit if needed; the caller gets updates in the tenant portal.",
+        : "The property management team will review it and arrange a visit if needed.",
   }
 }
 

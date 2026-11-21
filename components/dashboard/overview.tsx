@@ -1,18 +1,16 @@
 import {
   ArrowDownRightIcon,
   ArrowRight01Icon,
-  ArrowRightIcon,
   ArrowUpRightIcon,
   MinusSignIcon,
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
+import type { ReactNode } from "react"
 
-import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 import {
   activeRequests,
-  attentionRequests,
   urgentRequests,
   type Property,
   type Request,
@@ -22,7 +20,6 @@ import { useProperties } from "./portfolio"
 import { PropertyList } from "./property-list"
 import { RentChart } from "./rent-chart"
 import type { RentPeriod } from "./rent-history"
-import { RequestList } from "./request-list"
 import { MonthPicker } from "./workspace"
 
 export function Overview({
@@ -30,23 +27,21 @@ export function Overview({
   onMonth,
   rentHistory,
   requests,
+  coraActivity,
   onProperty,
-  onRequest,
   onProperties,
   onRent,
   onUrgent,
-  onAttention,
 }: {
   month: number
   onMonth: (month: number) => void
   rentHistory: RentPeriod[]
   requests: Request[]
+  coraActivity: ReactNode
   onProperty: (property: Property) => void
-  onRequest: (request: Request) => void
   onProperties: (vacanciesOnly?: boolean) => void
   onRent: () => void
   onUrgent: () => void
-  onAttention: () => void
 }) {
   const { messages, format } = useDashboardLocale()
   const properties = useProperties()
@@ -62,7 +57,6 @@ export function Overview({
     change !== null && Math.abs(change) >= 0.0005 ? Math.sign(change) : 0
   const open = activeRequests(requests)
   const urgent = urgentRequests(requests).length
-  const attention = attentionRequests(requests)
   const metrics = [
     {
       label: messages.nav.properties,
@@ -205,27 +199,9 @@ export function Overview({
         )}
       </ul>
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)]">
-        <section className="flex flex-col rounded-(--radius-card) border border-border bg-card p-5 shadow-panel sm:p-6 xl:col-start-2 xl:row-start-1">
-          <div className="mb-2 flex items-center justify-between gap-3">
-            <h2 className="text-base font-medium tracking-tight">
-              {messages.needsAttention}
-            </h2>
-            <span className="grid min-w-6 place-items-center rounded-(--radius-badge) bg-muted px-1.5 py-0.5 text-xs font-medium tabular-nums text-muted-foreground">
-              {format.number(attention.length)}
-            </span>
-          </div>
-          <RequestList requests={attention.slice(0, 3)} onRequest={onRequest} />
-          <div className="mt-auto border-t border-border pt-3">
-            <Button
-              variant="ghost"
-              className="-ml-2 h-auto min-h-9 max-w-full px-2 py-1.5 text-left whitespace-normal text-accent-foreground"
-              onClick={onAttention}
-            >
-              {messages.viewAttentionQueue}{" "}
-              <HugeiconsIcon icon={ArrowRightIcon} />
-            </Button>
-          </div>
-        </section>
+        <div className="flex min-w-0 flex-col xl:col-start-2 xl:row-start-1">
+          {coraActivity}
+        </div>
         <RentChart
           month={month}
           rentHistory={rentHistory}

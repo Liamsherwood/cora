@@ -18,11 +18,14 @@ import {
   startTicketIntake,
 } from "@/lib/tickets/activity"
 import {
+  getPublicTicket,
   getTicket,
   linkTicketToTenancy,
+  listPublicTicketRuns,
+  listPublicTickets,
   listTicketRuns,
   listTickets,
-  recordTicketRun,
+  saveTicketRun,
   resolveTicket,
   setTicketRunSendStatus,
 } from "@/lib/tickets/repository"
@@ -89,14 +92,17 @@ describe("WhatsApp ticket intake", () => {
   it("records a replayed report once and traces updates and failed sends on the same ticket", async () => {
     const db = testDb()
     const [first, replay] = await Promise.all([
-      recordTicketRun(db, reportRun),
-      recordTicketRun(db, reportRun),
+      saveTicketRun(db, reportRun),
+      saveTicketRun(db, reportRun),
     ])
-    const openedRunId = first ?? replay
-    expect([first, replay].filter(Boolean)).toHaveLength(1)
-    await setTicketRunSendStatus(db, openedRunId!, "accepted")
+    expect(
+      [first, replay].filter((receipt) => receipt?.replayed === false)
+    ).toHaveLength(1)
+    expect(first?.id).toBe(replay?.id)
+    const openedRunId = first!.id
+    await setTicketRunSendStatus(db, openedRunId, "accepted")
 
-    const updatedRunId = await recordTicketRun(db, {
+    const updatedRun = await saveTicketRun(db, {
       ...reportRun,
       messageKey: "follow-up",
       startedAt: new Date("2026-11-21T09:01:00Z"),
@@ -105,7 +111,7 @@ describe("WhatsApp ticket intake", () => {
         summary: "Kitchen tap in unit 4B leaking into the cupboard.",
       },
     })
-    const fallbackRunId = await recordTicketRun(db, {
+    const fallbackRun = await saveTicketRun(db, {
       ...reportRun,
       messageKey: "failed-reply",
       startedAt: new Date("2026-11-21T09:02:00Z"),
@@ -113,9 +119,9 @@ describe("WhatsApp ticket intake", () => {
       replyType: "fallback",
       report: null,
     })
-    await setTicketRunSendStatus(db, fallbackRunId!, "failed")
+    await setTicketRunSendStatus(db, fallbackRun!.id, "failed")
     expect(
-      await recordTicketRun(db, {
+      await saveTicketRun(db, {
         ...reportRun,
         messageKey: "unrelated-question",
         report: null,
@@ -127,6 +133,24 @@ describe("WhatsApp ticket intake", () => {
     expect(tickets[0].summary).toBe(
       "Kitchen tap in unit 4B leaking into the cupboard."
     )
+    const [publicTicket] = await listPublicTickets(db, 1)
+    expect(publicTicket).toEqual({
+      id: tickets[0].id,
+      caseId: tickets[0].caseId,
+      classification: tickets[0].classification,
+      createdAt: tickets[0].createdAt,
+      updatedAt: tickets[0].updatedAt,
+      resolvedAt: tickets[0].resolvedAt,
+    })
+    expect(await getPublicTicket(db, tickets[0].id)).toEqual(publicTicket)
+    const [publicRun] = await listPublicTicketRuns(db, tickets[0].id)
+    expect(publicRun).toMatchObject({
+      id: openedRunId,
+      agent: "cora-whatsapp",
+      sendStatus: "accepted",
+    })
+    expect(publicRun).not.toHaveProperty("gatewayGenerationId")
+    expect(publicRun).not.toHaveProperty("conversationId")
     expect(await listTicketRuns(db, tickets[0].id)).toMatchObject([
       {
         id: openedRunId,
@@ -134,9 +158,13 @@ describe("WhatsApp ticket intake", () => {
         gatewayGenerationId: "gen_test_report",
         sendStatus: "accepted",
       },
-      { id: updatedRunId, ticketChange: "updated", sendStatus: "unconfirmed" },
       {
-        id: fallbackRunId,
+        id: updatedRun?.id,
+        ticketChange: "updated",
+        sendStatus: "unconfirmed",
+      },
+      {
+        id: fallbackRun?.id,
         ticketChange: "none",
         replyType: "fallback",
         sendStatus: "failed",
@@ -147,9 +175,12 @@ describe("WhatsApp ticket intake", () => {
     expect((await getTicket(db, tickets[0].id))?.resolvedAt).toBeInstanceOf(
       Date
     )
-    expect(await recordTicketRun(db, reportRun)).toBeNull()
+    expect(await saveTicketRun(db, reportRun)).toMatchObject({
+      id: openedRunId,
+      replayed: true,
+    })
     expect(
-      await recordTicketRun(db, {
+      await saveTicketRun(db, {
         ...reportRun,
         messageKey: "late-follow-up",
         report: {
@@ -159,7 +190,7 @@ describe("WhatsApp ticket intake", () => {
       })
     ).toBeNull()
 
-    const newRunId = await recordTicketRun(db, {
+    const newRun = await saveTicketRun(db, {
       ...reportRun,
       messageKey: "new-report",
       report: { kind: "report", summary: "Hallway light stopped working." },
@@ -169,7 +200,7 @@ describe("WhatsApp ticket intake", () => {
     const newTicket = newTickets.find(({ id }) => id !== tickets[0].id)!
     expect(newTicket.summary).toBe("Hallway light stopped working.")
     expect(await listTicketRuns(db, newTicket.id)).toMatchObject([
-      { id: newRunId, ticketChange: "opened" },
+      { id: newRun?.id, ticketChange: "opened" },
     ])
     expect(await listTicketRuns(db, tickets[0].id)).toHaveLength(3)
   })
@@ -180,7 +211,8 @@ describe("WhatsApp ticket intake", () => {
     await addTenant(db, "Future tenant", "+4915700001234", "2099-01-01")
     const report = {
       kind: "report",
-      summary: "Water leaking under Bob’s kitchen sink.",
+      summary: "Water leaking under the kitchen sink.",
+      classification: { category: "plumbing", priority: "high", scope: "unit" },
     } as const
     const run = {
       ...reportRun,
@@ -189,7 +221,7 @@ describe("WhatsApp ticket intake", () => {
       senderPhone: "4915700001234",
       report,
     }
-    await Promise.all([recordTicketRun(db, run), recordTicketRun(db, run)])
+    await Promise.all([saveTicketRun(db, run), saveTicketRun(db, run)])
 
     const ticket = (await listTickets(db, 1)).find(
       (item) => item.summary === report.summary
@@ -198,7 +230,11 @@ describe("WhatsApp ticket intake", () => {
       tenantName: tenant.party.name,
       propertyAddress: tenant.property.address,
       unitIdentifier: tenant.unit.identifier,
+      classification: report.classification,
     })
+    expect(await listTicketRuns(db, ticket.id)).toMatchObject([
+      { classification: report.classification },
+    ])
     const linkedCases = await db
       .select()
       .from(cases)
@@ -208,7 +244,8 @@ describe("WhatsApp ticket intake", () => {
         id: ticket.caseId,
         propertyId: tenant.property.id,
         unitId: tenant.unit.id,
-        category: "maintenance",
+        category: "plumbing",
+        priority: "high",
         status: "open",
       },
     ])
@@ -229,7 +266,7 @@ describe("WhatsApp ticket intake", () => {
       kind: "report",
       summary: "A radiator is dripping.",
     } as const
-    await recordTicketRun(db, {
+    await saveTicketRun(db, {
       ...reportRun,
       threadKey: "shared-phone",
       messageKey: "shared-phone-report",
@@ -265,12 +302,13 @@ describe("WhatsApp ticket intake", () => {
       { ticketId: null, sendingReply: false },
     ])
 
-    const runId = await recordTicketRun(
+    const receipt = await saveTicketRun(
       db,
       { ...reportRun, threadKey, messageKey: "live-intake-report" },
       intake
     )
-    expect(runId).not.toBeNull()
+    expect(receipt).not.toBeNull()
+    const runId = receipt!.id
     const [activity] = await listTicketActivity(db)
     expect(activity.sendingReply).toBe(true)
     expect(activity.ticketId).not.toBeNull()
