@@ -59,13 +59,11 @@ export async function resetDemoAction() {
 
 export async function contactTenantAction(
   runId: string,
-  channel: "voice" | "whatsapp" | "portal",
-  locale = "de"
+  channel: "voice" | "whatsapp" | "portal"
 ) {
   return run((db) => {
     if (channel === "voice") return startCall(db, id(runId))
-    if (channel === "whatsapp")
-      return sendOfferWhatsApp(db, id(runId), locale === "en" ? "en" : "de")
+    if (channel === "whatsapp") return sendOfferWhatsApp(db, id(runId))
     // A person in centrix approved the suggested step.
     return markOfferSent(db, id(runId), {
       channel: "portal",

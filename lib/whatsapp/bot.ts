@@ -20,6 +20,9 @@ import {
   classificationInstructions,
   ticketClassification,
 } from "@/lib/tickets/classification"
+import { findWhatsAppRun } from "@/lib/workflow/engine"
+import { runOfferAgent } from "@/lib/whatsapp/offer-agent"
+import { whatsappRecipient } from "@/lib/whatsapp/outbound"
 import {
   saveTicketRun,
   setTicketRunSendStatus,
@@ -167,6 +170,43 @@ function createBot() {
     const conversation =
       (await state.get<ModelMessage[]>(conversationKey)) ?? []
     conversation.push({ role: "user", content: text })
+
+    // A tenant answering Cora's opener about an offer talks to the offer agent.
+    const offerRunId = senderPhone
+      ? await findWhatsAppRun(getDb(), whatsappRecipient(senderPhone)).catch(
+          (error: unknown) => {
+            console.error(
+              "WhatsApp offer lookup failed",
+              error instanceof Error ? error.name : ""
+            )
+            return null
+          }
+        )
+      : null
+    if (offerRunId) {
+      let offerReply = fallbackReply
+      try {
+        const turn = await runOfferAgent(
+          getDb(),
+          offerRunId,
+          conversation,
+          text
+        )
+        offerReply = turn.reply
+        console.info("WhatsApp offer turn", { outcome: turn.outcome })
+      } catch (error) {
+        console.error(
+          "WhatsApp offer agent failed",
+          error instanceof Error ? error.name : ""
+        )
+      }
+      await postReply(thread, offerReply, "assistant")
+      if (offerReply !== fallbackReply) {
+        conversation.push({ role: "assistant", content: offerReply })
+        await state.set(conversationKey, conversation.slice(-12), day)
+      }
+      return
+    }
 
     const threadSecret = process.env.TICKETING_THREAD_SECRET
     const model = process.env.WHATSAPP_AI_MODEL || "openai/gpt-5-mini"

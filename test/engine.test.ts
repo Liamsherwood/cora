@@ -13,7 +13,9 @@ import {
   acceptOffer,
   applyPartnerStatus,
   declineOffer,
+  detectMoveIn,
   getRunView,
+  hasStartedMoveIn,
   listPartnerOrders,
   markOfferSent,
   revokeConsent,
@@ -144,6 +146,17 @@ describe("move-in -> internet, end to end", () => {
 })
 
 describe("idempotency", () => {
+  it("marks only the move-in for the date started from the unit", async () => {
+    const { tenant } = await getUnitSnapshot(db, UNIT_4B)
+    const moveInDay = tenant!.move_in
+    await expect(hasStartedMoveIn(db, UNIT_4B, moveInDay)).resolves.toBe(false)
+
+    await detectMoveIn(db, UNIT_4B)
+
+    await expect(hasStartedMoveIn(db, UNIT_4B, moveInDay)).resolves.toBe(true)
+    await expect(hasStartedMoveIn(db, UNIT_4B, "2027-01-01")).resolves.toBe(false)
+  })
+
   it("same event twice does not create a second flow", async () => {
     const id = newId()
     const a = await moveIn(id)

@@ -1,5 +1,6 @@
 import type { DB } from "@/lib/db"
 import { getUnitSnapshot } from "@/lib/centrix/repository"
+import { greetingName } from "@/lib/demo"
 import { AppError, unprocessable } from "@/lib/errors"
 import { formatEur } from "@/lib/money"
 import {
@@ -48,7 +49,7 @@ export async function buildDynamicVariables(db: DB, runId: string) {
     call_purpose: "move_in_offer",
     unit_id: view.run.unitId,
     workflow_id: runId,
-    tenant_first_name: (snapshot.tenant?.name ?? "").split(" ")[0] ?? "",
+    tenant_first_name: greetingName(snapshot.tenant?.name),
     tenant_language: snapshot.tenant?.language ?? "de",
     address: snapshot.property.address,
     move_in_date: offer.target_date,

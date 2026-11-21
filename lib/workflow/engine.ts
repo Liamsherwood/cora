@@ -366,6 +366,22 @@ export async function triggerEvent(db: DB, input: TriggerInput) {
   }
 }
 
+const moveInEventId = (unitId: string, moveInDay: string) =>
+  nameUuid(`tenant.move_in:${unitId}:${moveInDay}`)
+
+/** The manually started event is distinct from imported move-in signals. */
+export async function hasStartedMoveIn(
+  db: Exec,
+  unitId: string,
+  moveInDay: string
+) {
+  const [event] = await db
+    .select({ id: t.events.id })
+    .from(t.events)
+    .where(eq(t.events.id, moveInEventId(unitId, moveInDay)))
+  return Boolean(event)
+}
+
 /**
  * The move-in of the unit's current tenant, as centrix would emit it. The event id is
  * derived from unit + move-in day, so firing it twice is the same event (no second flow).
@@ -374,7 +390,7 @@ export async function detectMoveIn(db: DB, unitId: string) {
   const snapshot = await getUnitSnapshot(db, unitId)
   if (!snapshot.tenant) throw unprocessable("This unit has no tenant.")
   return triggerEvent(db, {
-    id: nameUuid(`tenant.move_in:${unitId}:${snapshot.tenant.move_in}`),
+    id: moveInEventId(unitId, snapshot.tenant.move_in),
     type: "tenant.move_in",
     unit_id: unitId,
     party_id: snapshot.tenant.contact_id,
@@ -386,7 +402,6 @@ export async function detectMoveIn(db: DB, unitId: string) {
 
 const CONTACT_LINE: Partial<Record<Channel, string>> = {
   voice: 'Tap "Agree & order" or just say yes on the phone.',
-  whatsapp: 'Open the link in WhatsApp and tap "Agree & order".',
 }
 
 async function markOfferSentTx(
@@ -397,6 +412,8 @@ async function markOfferSentTx(
     actor: Actor
     costCents?: number
     externalThreadId?: string
+    /** What the tenant actually received, when the channel fixes the wording. */
+    message?: string
   }
 ) {
   const run = await loadRun(tx, runId, { lock: true })
@@ -417,7 +434,8 @@ async function markOfferSentTx(
     tx,
     runId,
     "agent",
-    `Hi! Your move-in is coming up. ${offerSentence(offer)} To order it, ${offer.partner_name} needs ${fields}. ${CONTACT_LINE[opts.channel] ?? 'Tap "Agree & order" when you\'re ready.'}`
+    opts.message ??
+      `Hi! Your move-in is coming up. ${offerSentence(offer)} To order it, ${offer.partner_name} needs ${fields}. ${CONTACT_LINE[opts.channel] ?? 'Tap "Agree & order" when you\'re ready.'}`
   )
   return offer
 }
@@ -443,7 +461,14 @@ export async function markOfferSent(
 export async function claimWhatsAppMessage(
   db: DB,
   runId: string,
-  opts: { costCents: number; mode: "live" | "simulated" }
+  opts: {
+    costCents: number
+    mode: "live" | "simulated"
+    /** The rendered opener template, recorded as sent. */
+    message: string
+    /** Hash of the number it goes to: replies from it reach this run's agent. */
+    recipient: string | null
+  }
 ) {
   return db.transaction(async (tx) => {
     const run = await loadRun(tx, runId, { lock: true })
@@ -461,15 +486,14 @@ export async function claimWhatsAppMessage(
       throw conflict("a WhatsApp message already went out for this workflow")
     let reminder = false
     if (run.state === "detected") {
-      await markOfferSentTx(tx, runId, { channel: "whatsapp", actor: "ai" })
+      await markOfferSentTx(tx, runId, {
+        channel: "whatsapp",
+        actor: "ai",
+        message: opts.message,
+      })
     } else if (run.state === "offer_sent") {
       reminder = true
-      await addMessage(
-        tx,
-        runId,
-        "agent",
-        `Quick reminder: ${offerSentence(offerOf(run))} Open the link in WhatsApp and tap "Agree & order".`
-      )
+      await addMessage(tx, runId, "agent", opts.message)
     } else {
       throw conflict(
         `WhatsApp can only go out before the tenant answers (now "${run.state}")`,
@@ -481,7 +505,7 @@ export async function claimWhatsAppMessage(
       runId,
       "whatsapp.sent",
       "ai",
-      { mode: opts.mode, reminder },
+      { mode: opts.mode, reminder, recipient: opts.recipient },
       { costCents: opts.costCents }
     )
     return { reminder, offer: offerOf(run) }
@@ -499,6 +523,51 @@ export async function recordWhatsAppFailure(
     runId,
     "system",
     "We couldn't reach you on WhatsApp – the offer is right here instead."
+  )
+}
+
+/**
+ * The workflow waiting on a WhatsApp answer from this number (hashed), if any: only a
+ * number Cora actually wrote to about an offer reaches the offer agent.
+ */
+export async function findWhatsAppRun(db: DB, recipient: string) {
+  const [row] = await db
+    .select({ id: t.workflowRuns.id })
+    .from(t.auditEvents)
+    .innerJoin(
+      t.workflowRuns,
+      eq(t.auditEvents.workflowRunId, t.workflowRuns.id)
+    )
+    .where(
+      and(
+        eq(t.auditEvents.type, "whatsapp.sent"),
+        sql`${t.auditEvents.details}->>'recipient' = ${recipient}`,
+        eq(t.workflowRuns.state, "offer_sent")
+      )
+    )
+    .orderBy(sql`${t.auditEvents.occurredAt} desc`)
+    .limit(1)
+  return row?.id ?? null
+}
+
+/** One WhatsApp exchange, mirrored into the workflow so every channel shares the thread. */
+export async function recordWhatsAppTurn(
+  db: DB,
+  runId: string,
+  turn: { tenant: string; agent: string; costCents?: number }
+) {
+  const run = await loadRun(db, runId)
+  await addMessage(db, runId, "tenant", turn.tenant, run.partyId)
+  await addMessage(db, runId, "agent", turn.agent)
+  await audit(
+    db,
+    runId,
+    "whatsapp.reply",
+    "ai",
+    {},
+    {
+      costCents: turn.costCents ?? 0,
+    }
   )
 }
 
@@ -662,7 +731,12 @@ async function placeOrderTx(
 export async function acceptOffer(
   db: DB,
   runId: string,
-  opts: { channel: Channel; fields?: ShareableField[] }
+  opts: {
+    channel: Channel
+    fields?: ShareableField[]
+    /** False when the caller records the tenant's own words (WhatsApp). */
+    transcript?: boolean
+  }
 ) {
   const run0 = await loadRun(db, runId)
   if (!run0.partnerId) throw unprocessable("workflow has no partner")
@@ -689,15 +763,16 @@ export async function acceptOffer(
         state: run.state,
       })
     }
-    await addMessage(
-      tx,
-      runId,
-      "tenant",
-      opts.channel === "voice"
-        ? "(on the phone) Yes, please order it."
-        : "Agree & order",
-      run.partyId
-    )
+    if (opts.transcript !== false)
+      await addMessage(
+        tx,
+        runId,
+        "tenant",
+        opts.channel === "voice"
+          ? "(on the phone) Yes, please order it."
+          : "Agree & order",
+        run.partyId
+      )
     const orderId = await placeOrderTx(
       tx,
       await loadRun(tx, runId),
@@ -751,7 +826,7 @@ export async function revokeConsent(
 export async function declineOffer(
   db: DB,
   runId: string,
-  opts: { channel: Channel; reason?: string }
+  opts: { channel: Channel; reason?: string; transcript?: boolean }
 ) {
   return db.transaction(async (tx) => {
     const run = await loadRun(tx, runId, { lock: true })
@@ -759,6 +834,7 @@ export async function declineOffer(
       actor: "tenant",
       details: { channel: opts.channel, reason: opts.reason ?? null },
     })
+    if (opts.transcript === false) return
     await addMessage(
       tx,
       runId,

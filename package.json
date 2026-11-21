@@ -16,6 +16,7 @@
     "db:seed": "tsx --conditions=react-server scripts/seed.ts",
     "partner:secret": "tsx scripts/partner-secret.ts",
     "voice:sync": "tsx scripts/sync-voice-agent.ts",
+    "whatsapp:template": "tsx scripts/whatsapp-template.ts",
     "test": "vitest run"
   },
   "dependencies": {
