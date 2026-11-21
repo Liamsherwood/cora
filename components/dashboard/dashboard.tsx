@@ -2,12 +2,12 @@
 
 import {
   Add01Icon,
+  ArrowLeft01Icon,
   CheckmarkCircle02Icon,
   RefreshIcon,
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
-import Link from "next/link"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useLayoutEffect, useRef, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -16,6 +16,7 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { cn } from "@/lib/utils"
 
 import {
   activeRequests,
@@ -32,18 +33,25 @@ import { RentChart } from "./rent-chart"
 import type { RentPeriod } from "./rent-history"
 import { RequestBadge, RequestList } from "./request-list"
 import { updateRequests, useRequests } from "./request-store"
-import { MonthPicker, Sidebar, WorkspaceHeader, type View } from "./workspace"
+import { MonthPicker, WorkspaceShell, type View } from "./workspace"
 
 type Overlay =
   | { type: "search" | "new" | "attention" }
-  | { type: "property"; property: Property }
-  | { type: "request"; request: Request }
+  | { type: "property"; property: Property; returnRequestId?: string }
+  | { type: "request"; request: Request; property?: Property }
 
 type RequestFilter = "active" | "attention" | "resolved"
 
-export function Dashboard({ rentHistory }: { rentHistory: RentPeriod[] }) {
-  const { locale, messages, format } = useDashboardLocale()
-  const [view, setView] = useState<View>("overview")
+export function Dashboard({
+  rentHistory,
+  initialView = "overview",
+}: {
+  rentHistory: RentPeriod[]
+  /** From `?view=`, so other workspace pages can link to a dashboard view. */
+  initialView?: View
+}) {
+  const { messages, format } = useDashboardLocale()
+  const [view, setView] = useState<View>(initialView)
   const [month, setMonth] = useState(rentHistory.length - 1)
   const [overlay, setOverlay] = useState<Overlay | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -62,18 +70,23 @@ export function Dashboard({ rentHistory }: { rentHistory: RentPeriod[] }) {
       requests: requests.filter(({ status }) => status === "Resolved"),
     },
   }
-  const { title, description } = messages.headings[view]
+  const heading = messages.headings[view]
   const rent = rentHistory[month]
   const rentTotals = [
-    { label: messages.collected, amount: rent.collected },
+    { label: messages.simulatedCollections, amount: rent.collected },
     { label: messages.expected, amount: rent.expected },
-    { label: messages.outstanding, amount: rent.expected - rent.collected },
+    {
+      label: messages.projectedShortfall,
+      amount: rent.expected - rent.collected,
+    },
   ]
   const selectedRequest =
     overlay?.type === "request"
       ? (requests.find(({ id }) => id === overlay.request.id) ??
         overlay.request)
       : undefined
+  const requestProperty =
+    overlay?.type === "request" ? overlay.property : undefined
 
   useEffect(() => {
     function searchShortcut(event: KeyboardEvent) {
@@ -97,8 +110,29 @@ export function Dashboard({ rentHistory }: { rentHistory: RentPeriod[] }) {
     return () => window.removeEventListener("keydown", searchShortcut)
   }, [dialogOpen])
 
+  useLayoutEffect(() => {
+    if (!dialogOpen || !dialogPopup.current) return
+    if (overlay?.type !== "property" && overlay?.type !== "request") return
+
+    const requestButton =
+      overlay.type === "property" && overlay.returnRequestId
+        ? dialogPopup.current.querySelector<HTMLButtonElement>(
+            `[data-request-id="${CSS.escape(overlay.returnRequestId)}"]`
+          )
+        : null
+    const target =
+      requestButton ??
+      dialogPopup.current.querySelector<HTMLElement>("[data-initial-focus]")
+    target?.focus()
+  }, [dialogOpen, overlay])
+
   function changeView(next: View) {
     setView(next)
+    // Keep the URL in step so a reload or shared link lands on the same view.
+    const url = new URL(window.location.href)
+    if (next === "overview") url.searchParams.delete("view")
+    else url.searchParams.set("view", next)
+    window.history.replaceState(window.history.state, "", url)
     window.scrollTo({ top: 0 })
   }
 
@@ -113,6 +147,10 @@ export function Dashboard({ rentHistory }: { rentHistory: RentPeriod[] }) {
 
   function openRequest(request: Request) {
     openOverlay({ type: "request", request })
+  }
+
+  function returnToProperty(property: Property, request: Request) {
+    setOverlay({ type: "property", property, returnRequestId: request.id })
   }
 
   function createRequest(request: Request) {
@@ -131,9 +169,13 @@ export function Dashboard({ rentHistory }: { rentHistory: RentPeriod[] }) {
         item.id === request.id ? { ...item, status } : item
       )
     )
-    setDialogOpen(false)
-    if (status === "Open" && view === "maintenance") {
-      setRequestFilter("active")
+    if (requestProperty) {
+      returnToProperty(requestProperty, request)
+    } else {
+      setDialogOpen(false)
+      if (status === "Open" && view === "maintenance") {
+        setRequestFilter("active")
+      }
     }
     setAnnouncement(
       formatMessage(
@@ -145,129 +187,103 @@ export function Dashboard({ rentHistory }: { rentHistory: RentPeriod[] }) {
     )
   }
 
-  return (
-    <div className="flex min-h-svh">
-      <a
-        href="#main-content"
-        className="sr-only rounded-md bg-card px-3 py-2 focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50"
-      >
-        {messages.skipToContent}
-      </a>
-      <Sidebar view={view} onView={changeView} />
-      <div className="min-w-0 flex-1">
-        <WorkspaceHeader
-          view={view}
-          onView={changeView}
-          onSearch={() => openOverlay({ type: "search" })}
-          onAttention={() => openOverlay({ type: "attention" })}
-          attentionCount={attention.length}
-        />
-        <main
-          id="main-content"
-          className="mx-auto max-w-[1460px] px-4 pt-7 pb-10 sm:px-8 sm:pt-9"
-        >
-          <div className="mb-6 flex flex-wrap items-end justify-between gap-x-6 gap-y-4 sm:mb-7">
-            <div>
-              <h1 className="text-[30px] leading-[1.1] font-medium tracking-[-0.045em] sm:text-[38px]">
-                {title}
-              </h1>
-              <p className="mt-2 text-sm leading-5 text-muted-foreground sm:text-[15px]">
-                {description}
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2.5">
-              {(view === "overview" || view === "rent") && (
-                <MonthPicker
-                  month={month}
-                  rentHistory={rentHistory}
-                  onMonth={setMonth}
-                />
-              )}
-              {(view === "overview" || view === "maintenance") && (
-                <Button size="lg" onClick={() => openOverlay({ type: "new" })}>
-                  <HugeiconsIcon icon={Add01Icon} /> {messages.newRequest}
-                </Button>
-              )}
-            </div>
-          </div>
+  const showNewRequest = view === "overview" || view === "maintenance"
 
-          {view === "overview" && (
-            <Overview
-              month={month}
-              rentHistory={rentHistory}
-              requests={requests}
-              onProperty={openProperty}
-              onRequest={openRequest}
-              onProperties={() => changeView("properties")}
-              onAttention={() => {
-                setRequestFilter("attention")
-                changeView("maintenance")
-              }}
-            />
-          )}
-          {view === "properties" && (
-            <PropertyList requests={requests} onProperty={openProperty} />
-          )}
-          {view === "maintenance" && (
-            <section className="rounded-2xl border border-border bg-card px-5 py-4 shadow-panel sm:px-6">
-              <div
-                className="mb-2 flex flex-wrap gap-1.5 border-b border-border pb-4"
-                role="group"
-                aria-label={messages.filterRequests}
-              >
-                {(["active", "attention", "resolved"] as const).map(
-                  (filter) => (
-                    <Button
-                      key={filter}
-                      variant={requestFilter === filter ? "secondary" : "ghost"}
-                      aria-pressed={requestFilter === filter}
-                      onClick={() => setRequestFilter(filter)}
-                    >
-                      {requestGroups[filter].label}{" "}
-                      <span className="text-xs text-muted-foreground tabular-nums">
-                        {format.number(requestGroups[filter].requests.length)}
-                      </span>
-                    </Button>
-                  )
-                )}
-              </div>
-              <RequestList
-                requests={requestGroups[requestFilter].requests}
-                onRequest={openRequest}
-              />
-            </section>
-          )}
-          {view === "rent" && (
-            <div className="space-y-5">
-              <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
-                {rentTotals.map(({ label, amount }) => (
-                  <div
-                    key={label}
-                    className="rounded-2xl border border-border bg-card p-4 shadow-panel sm:p-5"
-                  >
-                    <dt className="text-sm text-muted-foreground">{label}</dt>
-                    <dd className="mt-2 text-2xl font-medium tracking-tight tabular-nums">
-                      {format.currency(amount)}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
-              <RentChart month={month} rentHistory={rentHistory} />
-            </div>
-          )}
-          <p role="status" className="sr-only">
-            {announcement}
-          </p>
-        </main>
-        <footer className="mx-auto max-w-[1460px] px-4 pb-6 text-sm text-muted-foreground sm:px-8">
-          <Link
-            href={`/${locale}/privacy`}
-            className="underline-offset-4 hover:text-foreground hover:underline"
+  return (
+    <WorkspaceShell
+      current={view}
+      onView={changeView}
+      onSearch={() => openOverlay({ type: "search" })}
+      onAttention={() => openOverlay({ type: "attention" })}
+      attentionCount={attention.length}
+      title={heading.title}
+      description={"description" in heading ? heading.description : undefined}
+      actions={
+        showNewRequest ? (
+          <Button size="lg" onClick={() => openOverlay({ type: "new" })}>
+            <HugeiconsIcon icon={Add01Icon} /> {messages.newRequest}
+          </Button>
+        ) : undefined
+      }
+    >
+      {view === "overview" && (
+        <Overview
+          month={month}
+          onMonth={setMonth}
+          rentHistory={rentHistory}
+          requests={requests}
+          onProperty={openProperty}
+          onRequest={openRequest}
+          onProperties={() => changeView("properties")}
+          onAttention={() => {
+            setRequestFilter("attention")
+            changeView("maintenance")
+          }}
+        />
+      )}
+      {view === "properties" && (
+        <PropertyList requests={requests} onProperty={openProperty} />
+      )}
+      {view === "maintenance" && (
+        <section className="rounded-(--radius-card) border border-border bg-card px-5 py-4 shadow-panel sm:px-6">
+          <div
+            className="mb-2 flex flex-wrap gap-1.5 border-b border-border pb-4"
+            role="group"
+            aria-label={messages.filterRequests}
           >
-            {messages.privacyPolicy}
-          </Link>
-        </footer>
-      </div>
+            {(["active", "attention", "resolved"] as const).map((filter) => (
+              <Button
+                key={filter}
+                variant={requestFilter === filter ? "secondary" : "ghost"}
+                className="rounded-(--radius-chip)"
+                aria-pressed={requestFilter === filter}
+                onClick={() => setRequestFilter(filter)}
+              >
+                <span className="flex items-baseline gap-1.5">
+                  {requestGroups[filter].label}
+                  <span className="text-xs font-normal tabular-nums text-muted-foreground">
+                    {format.number(requestGroups[filter].requests.length)}
+                  </span>
+                </span>
+              </Button>
+            ))}
+          </div>
+          <RequestList
+            requests={requestGroups[requestFilter].requests}
+            onRequest={openRequest}
+          />
+        </section>
+      )}
+      {view === "rent" && (
+        <div className="space-y-5">
+          <div className="space-y-3">
+            <div className="flex sm:justify-end">
+              <MonthPicker
+                month={month}
+                rentHistory={rentHistory}
+                onMonth={setMonth}
+              />
+            </div>
+            <dl className="grid gap-3 min-[400px]:grid-cols-2 sm:grid-cols-3 sm:gap-4">
+              {rentTotals.map(({ label, amount }) => (
+                <div
+                  key={label}
+                  className="rounded-(--radius-card) border border-border bg-card p-4 shadow-panel min-[400px]:first:col-span-2 sm:first:col-span-1 lg:p-5"
+                >
+                  <dt className="text-sm text-muted-foreground">{label}</dt>
+                  <dd className="mt-2 text-2xl font-medium tabular-nums">
+                    {format.currency(amount)}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+          <RentChart month={month} rentHistory={rentHistory} />
+        </div>
+      )}
+      <p role="status" className="sr-only">
+        {announcement}
+      </p>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent
@@ -304,7 +320,11 @@ export function Dashboard({ rentHistory }: { rentHistory: RentPeriod[] }) {
           )}
           {overlay?.type === "property" && (
             <>
-              <DialogTitle className="pr-8 text-xl font-medium tracking-tight">
+              <DialogTitle
+                tabIndex={-1}
+                data-initial-focus
+                className="pr-8 text-xl font-medium tracking-tight focus:outline-none"
+              >
                 {overlay.property.name}
               </DialogTitle>
               <DialogDescription className="mt-1.5 text-sm text-muted-foreground">
@@ -319,14 +339,24 @@ export function Dashboard({ rentHistory }: { rentHistory: RentPeriod[] }) {
                   requests={active.filter(
                     ({ propertyId }) => propertyId === overlay.property.id
                   )}
-                  onRequest={openRequest}
+                  onRequest={(request) =>
+                    openOverlay({
+                      type: "request",
+                      request,
+                      property: overlay.property,
+                    })
+                  }
                 />
               </div>
             </>
           )}
-          {selectedRequest && (
+          {overlay?.type === "request" && selectedRequest && (
             <>
-              <DialogTitle className="pr-8 text-xl font-medium tracking-tight wrap-break-word">
+              <DialogTitle
+                tabIndex={-1}
+                data-initial-focus
+                className="pr-8 text-xl font-medium tracking-tight wrap-break-word focus:outline-none"
+              >
                 {selectedRequest.title}
               </DialogTitle>
               <DialogDescription className="mt-1.5 text-sm text-muted-foreground">
@@ -337,13 +367,17 @@ export function Dashboard({ rentHistory }: { rentHistory: RentPeriod[] }) {
               </DialogDescription>
               <div className="mt-4 flex items-center gap-2">
                 <RequestBadge request={selectedRequest} />
-                <span className="text-xs text-muted-foreground">
-                  {selectedRequest.priority === "Urgent" &&
-                  selectedRequest.status !== "Resolved"
-                    ? messages.status[selectedRequest.status]
-                    : formatMessage(messages.requestPriority, {
-                        priority: messages.priority[selectedRequest.priority],
-                      })}
+                <span
+                  className={cn(
+                    "text-xs text-muted-foreground",
+                    selectedRequest.priority === "Urgent" &&
+                      selectedRequest.status !== "Resolved" &&
+                      "font-medium text-destructive"
+                  )}
+                >
+                  {formatMessage(messages.requestPriority, {
+                    priority: messages.priority[selectedRequest.priority],
+                  })}
                 </span>
               </div>
               {selectedRequest.description && (
@@ -351,7 +385,19 @@ export function Dashboard({ rentHistory }: { rentHistory: RentPeriod[] }) {
                   {selectedRequest.description}
                 </p>
               )}
-              <div className="mt-6 flex justify-end">
+              <div className="mt-6 flex flex-wrap items-center justify-end gap-2">
+                {requestProperty && (
+                  <Button
+                    variant="ghost"
+                    className="mr-auto -ml-2.5 px-2.5 text-muted-foreground"
+                    onClick={() =>
+                      returnToProperty(requestProperty, selectedRequest)
+                    }
+                  >
+                    <HugeiconsIcon icon={ArrowLeft01Icon} />
+                    {messages.backToProperty}
+                  </Button>
+                )}
                 {selectedRequest.status === "Resolved" ? (
                   <Button
                     variant="outline"
@@ -375,6 +421,6 @@ export function Dashboard({ rentHistory }: { rentHistory: RentPeriod[] }) {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </WorkspaceShell>
   )
 }

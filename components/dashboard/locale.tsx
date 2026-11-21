@@ -21,11 +21,18 @@ function createFormatters(locale: Locale) {
     minimumFractionDigits: 1,
     maximumFractionDigits: 1,
   })
+  const percentChange = new Intl.NumberFormat(regionalLocale, {
+    style: "percent",
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+    signDisplay: "exceptZero",
+  })
   return {
     number: number.format,
     currency: currency.format,
     percent: percent.format,
     precisePercent: precisePercent.format,
+    percentChange: percentChange.format,
   }
 }
 
@@ -61,11 +68,5 @@ export function useDashboardLocale() {
   return context
 }
 
-const placeholder = /\{(\w+)\}/g
-
-export function formatMessage(message: string, values: Record<string, string>) {
-  return message.replace(
-    placeholder,
-    (token, key: string) => values[key] ?? token
-  )
-}
+// Server components import it from "@/lib/i18n/format-message" directly.
+export { formatMessage } from "@/lib/i18n/format-message"

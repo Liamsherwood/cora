@@ -36,6 +36,27 @@
       "when": 1795202134230,
       "tag": "0004_rename_lead_time_business_days",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1795220363284,
+      "tag": "0005_maintenance_tickets",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1795220678547,
+      "tag": "0006_maintenance_tickets",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1795222689803,
+      "tag": "0007_ticket_intake_activity",
+      "breakpoints": true
     }
   ]
 }

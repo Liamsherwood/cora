@@ -29,7 +29,7 @@ export function DialogContent({
           ref={ref}
           data-slot="dialog-content"
           className={cn(
-            "relative w-full max-w-md rounded-2xl border border-border bg-popover p-6 text-popover-foreground shadow-float outline-none",
+            "relative w-full max-w-md rounded-(--radius-overlay) border border-border bg-popover p-6 text-popover-foreground shadow-float outline-none",
             className
           )}
           {...props}

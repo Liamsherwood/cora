@@ -16,9 +16,13 @@ function chartAxis(max: number) {
 export function RentChart({
   month,
   rentHistory,
+  monthControl,
+  className,
 }: {
   month: number
   rentHistory: RentPeriod[]
+  monthControl?: ReactNode
+  className?: string
 }) {
   const { messages, format } = useDashboardLocale()
   const history = rentHistory.slice(month - 5, month + 1)
@@ -27,20 +31,28 @@ export function RentChart({
   )
 
   return (
-    <figure className="rounded-2xl border border-border bg-card p-5 shadow-panel sm:p-6">
-      <figcaption className="mb-6 flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
-        <div>
-          <h2 className="text-base font-medium tracking-tight">
-            {messages.nav.rent}
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {messages.chartDescription}
-          </p>
+    <figure
+      className={cn(
+        "rounded-(--radius-card) border border-border bg-card p-5 shadow-panel sm:p-6",
+        className
+      )}
+    >
+      <figcaption className="mb-6 space-y-3">
+        <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
+          <div>
+            <h2 className="text-base font-medium tracking-tight">
+              {messages.simulatedCollections}
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {messages.chartDescription}
+            </p>
+          </div>
+          {monthControl}
         </div>
-        <div className="flex gap-4 text-xs text-muted-foreground sm:pt-1">
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
           <span className="flex items-center gap-1.5">
             <span className="size-2.5 rounded-[2px] bg-chart-collected" />
-            {messages.collected}
+            {messages.chartPayments}
           </span>
           <span className="flex items-center gap-1.5">
             <span className="h-0.5 w-3 rounded-full bg-chart-target" />
@@ -50,7 +62,7 @@ export function RentChart({
       </figcaption>
       <div className="grid h-44 grid-cols-[max-content_minmax(0,1fr)] gap-3 sm:h-48">
         <div
-          className="flex flex-col justify-between text-xs leading-none whitespace-nowrap text-muted-foreground tabular-nums"
+          className="flex flex-col justify-between text-xs leading-none tabular-nums whitespace-nowrap text-muted-foreground"
           aria-hidden="true"
         >
           {axis.map((amount) => (
@@ -106,7 +118,7 @@ export function RentChart({
                       <div
                         aria-hidden="true"
                         className={cn(
-                          "pointer-events-none absolute z-10 hidden w-max rounded-lg border border-border bg-popover px-3 py-2 text-xs shadow-float group-hover:block group-focus:block",
+                          "pointer-events-none absolute z-10 hidden w-max rounded-(--radius-overlay) border border-border bg-popover px-3 py-2 text-xs shadow-float group-hover:block group-focus:block",
                           index < 2
                             ? "left-0"
                             : index > 3
@@ -150,3 +162,4 @@ export function RentChart({
     </figure>
   )
 }
+import type { ReactNode } from "react"

@@ -1,0 +1,51 @@
+.icon {
+  display: grid;
+  width: 0.875rem;
+  height: 0.875rem;
+  flex: none;
+  place-items: center;
+}
+
+.icon::before,
+.icon::after {
+  grid-area: 1 / 1;
+  width: 0.625rem;
+  height: 1.5px;
+  border-radius: 1px;
+  background: currentColor;
+  content: "";
+}
+
+.icon::after {
+  transform: rotate(90deg);
+}
+
+.details[open] .icon::after {
+  transform: rotate(0deg);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .icon::after {
+    transition: transform 150ms var(--ease-press);
+  }
+
+  .details::details-content {
+    display: grid;
+    grid-template-rows: 0fr;
+    overflow: clip;
+    /* Keep the content laid out until the closing transition finishes. */
+    content-visibility: visible;
+    visibility: hidden;
+    opacity: 0;
+    transition:
+      grid-template-rows 180ms var(--ease-press),
+      opacity 180ms var(--ease-press),
+      visibility 180ms;
+  }
+
+  .details[open]::details-content {
+    grid-template-rows: 1fr;
+    visibility: visible;
+    opacity: 1;
+  }
+}

@@ -18,24 +18,18 @@ const badgeColors = {
   Scheduled: "bg-info-surface text-info",
   "Awaiting vendor": "bg-warning-surface text-warning",
   Resolved: "bg-success-surface text-success",
-  Urgent: "bg-destructive-surface text-destructive",
 }
 
 export function RequestBadge({ request }: { request: Request }) {
   const { messages } = useDashboardLocale()
-  const label =
-    request.priority === "Urgent" && request.status !== "Resolved"
-      ? "Urgent"
-      : request.status
-
   return (
     <span
       className={cn(
-        "inline-block rounded-full px-2 py-1 text-xs font-medium",
-        badgeColors[label]
+        "inline-block rounded-(--radius-badge) px-2 py-1 text-xs font-medium",
+        badgeColors[request.status]
       )}
     >
-      {label === "Urgent" ? messages.priority.Urgent : messages.status[label]}
+      {messages.status[request.status]}
     </span>
   )
 }
@@ -63,7 +57,7 @@ export function RequestList({
   }
 
   return (
-    <ul className="divide-y divide-border">
+    <ul className="@container divide-y divide-border">
       {requests.map((request) => {
         const property = properties.find(({ id }) => id === request.propertyId)
         const urgent =
@@ -73,17 +67,18 @@ export function RequestList({
           <li key={request.id}>
             <button
               type="button"
-              className="group flex w-full items-center gap-3 rounded-md py-3 text-left hover:bg-muted/60"
+              className="grid w-full grid-cols-[17px_minmax(0,1fr)_14px] items-start gap-x-3 gap-y-1.5 rounded-md py-3 text-left hover:bg-muted/60 @xs:grid-cols-[17px_minmax(0,1fr)_auto_14px] @xs:items-center"
+              data-request-id={request.id}
               onClick={() => onRequest(request)}
             >
               <span
                 className={cn(
-                  "grid size-9 shrink-0 place-items-center rounded-lg",
+                  "mt-0.5 @xs:mt-0",
                   urgent
-                    ? "bg-destructive-surface text-destructive"
+                    ? "text-destructive"
                     : waiting
-                      ? "bg-warning-surface text-warning"
-                      : "bg-muted text-muted-foreground"
+                      ? "text-warning"
+                      : "text-muted-foreground"
                 )}
               >
                 <HugeiconsIcon
@@ -91,23 +86,30 @@ export function RequestList({
                     urgent ? Alert02Icon : waiting ? Clock01Icon : Wrench01Icon
                   }
                   size={17}
+                  aria-hidden="true"
                 />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-medium">
+                <span className="block text-sm font-medium wrap-anywhere">
                   {request.title}
                 </span>
                 <span className="mt-0.5 block truncate text-xs text-muted-foreground">
                   {property?.name}
                 </span>
               </span>
-              <span className="max-w-28 shrink-0 text-right sm:max-w-none">
+              <span className="col-start-2 row-start-2 flex flex-wrap items-center gap-1.5 @xs:col-start-3 @xs:row-start-1 @xs:max-w-32 @xs:justify-end @xs:text-right">
                 <RequestBadge request={request} />
+                {urgent && (
+                  <span className="rounded-(--radius-badge) bg-destructive-surface px-2 py-1 text-xs font-medium text-destructive">
+                    {messages.priority.Urgent}
+                  </span>
+                )}
               </span>
               <HugeiconsIcon
                 icon={ArrowRight01Icon}
                 size={14}
-                className="mr-0.5 shrink-0 text-muted-foreground"
+                aria-hidden="true"
+                className="col-start-3 row-start-1 mt-0.5 text-muted-foreground @xs:col-start-4 @xs:mt-0"
               />
             </button>
           </li>

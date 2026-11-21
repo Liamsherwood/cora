@@ -53,7 +53,7 @@ export default async function PrivacyPage({
           {privacy.intro}
         </p>
         <div className="mt-9 space-y-7">
-          <section className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+          <section className="rounded-(--radius-card) border border-border bg-card p-5 sm:p-6">
             <h2 className="text-xl font-medium">{privacy.contact.title}</h2>
             <p className="mt-2 leading-relaxed text-muted-foreground">
               {privacy.contact.description}{" "}

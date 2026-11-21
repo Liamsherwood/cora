@@ -118,8 +118,8 @@ placeholders.
 
 Cora replies to inbound text about property management and keeps up to four
 recent exchanges per conversation for context. Replies use Vercel AI Gateway.
-The pilot handles conversation only. Case creation and staff handoff remain
-manual.
+The optional ticket inbox turns concrete maintenance reports into tickets
+for staff review.
 
 1. Open your Meta app and go to **WhatsApp → API Setup** (or **Use cases →
    Customize → API Setup**). Select the sender number and copy its **Phone Number
@@ -151,6 +151,28 @@ manual.
    back `Received: Test!` through Meta's API without calling AI Gateway. To test
    the assistant, send “My kitchen tap is leaking.” Cora should reply with a
    follow-up question. Reply with another detail to test conversation context.
+
+### Maintenance ticket inbox
+
+Open **Tickets** in the dashboard to review the example report, explore its
+simulated WhatsApp activity, and try resolving the ticket. The example is
+available without a password when `DEMO_MODE=true` or no staff password is set.
+
+To connect the live WhatsApp inbox, apply the database migrations, leave
+`DEMO_MODE` unset, and set `TICKETING_STAFF_PASSWORD` and
+`TICKETING_THREAD_SECRET` to separate random values. Keep the thread secret
+stable so new messages can be matched to existing tickets. Sign in as `staff`
+with the configured password. Use HTTPS for hosted access.
+
+Send the assistant a fictional maintenance report to open a ticket. While it is
+open, relevant follow-ups update the same ticket and the activity history shows
+the agent, model, AI Gateway generation ID when available, and WhatsApp send outcome.
+When the WhatsApp sender's international phone number matches one active tenant
+and unit in the portfolio, Cora creates and links a case for that tenancy.
+Staff can assign unmatched or ambiguous reports from the ticket detail panel.
+The inbox shows the tenant, property, unit and case reference for linked tickets.
+Resolving the ticket also resolves its linked case. A later maintenance report
+can open a new ticket for the same conversation.
 
 ## Database
 

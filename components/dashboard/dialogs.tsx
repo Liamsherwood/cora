@@ -18,9 +18,10 @@ import { priorities, type Priority, type Property, type Request } from "./data"
 
 import { useDashboardLocale } from "./locale"
 import { useProperties } from "./portfolio"
+import { normalizeSearch } from "./search"
 
 const field =
-  "w-full rounded-md border border-input bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground"
+  "min-h-11 w-full rounded-(--radius-field) border border-input bg-card px-3 py-2 text-base text-foreground placeholder:text-muted-foreground sm:min-h-0 sm:text-sm"
 
 export function NewRequestDialog({
   onCreate,
@@ -81,8 +82,8 @@ export function NewRequestDialog({
             {error}
           </p>
         )}
-        <div className="grid grid-cols-2 gap-3">
-          <label className="block space-y-1.5 text-sm font-medium">
+        <div className="grid gap-4 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] sm:gap-3">
+          <label className="block min-w-0 space-y-1.5 text-sm font-medium">
             <span>{messages.property}</span>
             <select name="property" className={field} required>
               <option value="">{messages.selectProperty}</option>
@@ -113,23 +114,19 @@ export function NewRequestDialog({
             maxLength={1000}
           />
         </label>
-        <div className="flex justify-end gap-2 pt-2">
-          <DialogClose render={<Button variant="outline" />}>
+        <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
+          <DialogClose
+            render={<Button variant="outline" className="h-11 sm:h-9" />}
+          >
             {messages.cancel}
           </DialogClose>
-          <Button type="submit">{messages.createRequest}</Button>
+          <Button type="submit" className="h-11 sm:h-9">
+            {messages.createRequest}
+          </Button>
         </div>
       </form>
     </>
   )
-}
-
-function normalizeSearch(value: string) {
-  return value
-    .normalize("NFKD")
-    .replace(/\p{Diacritic}/gu, "")
-    .toLowerCase()
-    .replaceAll("ß", "ss")
 }
 
 export function SearchDialog({
@@ -203,7 +200,7 @@ export function SearchDialog({
               <Button
                 variant="ghost"
                 onClick={open}
-                className="h-auto w-full gap-3 px-2 py-2 text-left"
+                className="h-auto w-full gap-3 rounded-md px-2 py-2 text-left"
               >
                 <HugeiconsIcon icon={icon} className="text-muted-foreground" />
                 <span className="min-w-0 flex-1">
