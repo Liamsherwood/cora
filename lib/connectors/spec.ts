@@ -1,5 +1,7 @@
 import { z } from "zod"
 
+import { isCalendarDay } from "@/lib/time"
+
 /**
  * centrix Partner Connector Spec v1.
  *
@@ -49,7 +51,9 @@ export const PARTNER_STATUSES = [
   "rejected",
 ] as const
 
-const isoDay = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "expected YYYY-MM-DD")
+const isoDay = z
+  .string()
+  .refine(isCalendarDay, "expected a real calendar day as YYYY-MM-DD")
 
 export const EligibilitySchema = z
   .object({
