@@ -20,10 +20,14 @@ export function PropertyList({
   requests,
   onProperty,
   onViewAll,
+  vacanciesOnly = false,
+  onVacanciesOnlyChange,
 }: {
   requests: Request[]
   onProperty: (property: Property) => void
   onViewAll?: () => void
+  vacanciesOnly?: boolean
+  onVacanciesOnlyChange?: (vacanciesOnly: boolean) => void
 }) {
   const { messages, format } = useDashboardLocale()
   const properties = useProperties()
@@ -31,9 +35,14 @@ export function PropertyList({
   const search = normalizeSearch(query.trim())
   const rows = onViewAll
     ? properties.slice(0, previewLimit)
-    : properties.filter(({ name, address }) =>
-        normalizeSearch(`${name} ${address}`).includes(search)
+    : properties.filter(
+        ({ name, address, units, occupied }) =>
+          (!vacanciesOnly || occupied < units) &&
+          normalizeSearch(`${name} ${address}`).includes(search)
       )
+  if (vacanciesOnly) {
+    rows.sort((a, b) => b.units - b.occupied - (a.units - a.occupied))
+  }
   const openCounts = new Map<string, number>()
   for (const { propertyId } of activeRequests(requests)) {
     openCounts.set(propertyId, (openCounts.get(propertyId) ?? 0) + 1)
@@ -67,7 +76,7 @@ export function PropertyList({
         ) : (
           <>
             <p role="status" className="text-sm text-muted-foreground">
-              {search
+              {search || vacanciesOnly
                 ? formatMessage(messages.matchingProperties, {
                     count: format.number(rows.length),
                     total: format.number(properties.length),
@@ -76,28 +85,44 @@ export function PropertyList({
                     count: format.number(properties.length),
                   })}
             </p>
-            <div className="relative w-full sm:w-64">
-              <HugeiconsIcon
-                icon={Search01Icon}
-                size={16}
-                aria-hidden="true"
-                className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground"
-              />
-              <input
-                type="search"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                aria-label={messages.searchProperties}
-                placeholder={messages.propertySearchPlaceholder}
-                className="h-11 w-full rounded-(--radius-field) border border-input bg-card pr-3 pl-9 text-base placeholder:text-muted-foreground sm:h-9 sm:text-sm"
-              />
+            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+              <div className="relative w-full sm:w-64">
+                <HugeiconsIcon
+                  icon={Search01Icon}
+                  size={16}
+                  aria-hidden="true"
+                  className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground"
+                />
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  aria-label={messages.searchProperties}
+                  placeholder={messages.propertySearchPlaceholder}
+                  className="h-11 w-full rounded-(--radius-field) border border-input bg-card pr-3 pl-9 text-base placeholder:text-muted-foreground sm:h-9 sm:text-sm"
+                />
+              </div>
+              {onVacanciesOnlyChange && (
+                <Button
+                  variant={vacanciesOnly ? "secondary" : "outline"}
+                  className="h-11 sm:h-9"
+                  aria-pressed={vacanciesOnly}
+                  onClick={() => onVacanciesOnlyChange(!vacanciesOnly)}
+                >
+                  {messages.vacanciesOnly}
+                </Button>
+              )}
             </div>
           </>
         )}
       </div>
       {rows.length === 0 ? (
         <p className="border-t border-border px-3.5 py-5 text-sm text-muted-foreground sm:px-6">
-          {search ? messages.noMatchingProperties : messages.noProperties}
+          {search
+            ? messages.noMatchingProperties
+            : vacanciesOnly
+              ? messages.noVacancies
+              : messages.noProperties}
         </p>
       ) : (
         <table className="w-full rounded-(--radius-table) text-left text-sm">

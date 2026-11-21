@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils"
 import {
   activeRequests,
   attentionRequests,
+  urgentRequests,
   type Property,
   type Request,
 } from "./data"
@@ -40,7 +41,8 @@ type Overlay =
   | { type: "property"; property: Property; returnRequestId?: string }
   | { type: "request"; request: Request; property?: Property }
 
-type RequestFilter = "active" | "attention" | "resolved"
+const requestFilters = ["active", "urgent", "attention", "resolved"] as const
+type RequestFilter = (typeof requestFilters)[number]
 
 export function Dashboard({
   rentHistory,
@@ -56,6 +58,9 @@ export function Dashboard({
   const [overlay, setOverlay] = useState<Overlay | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const dialogPopup = useRef<HTMLDivElement>(null)
+  const pageHeading = useRef<HTMLHeadingElement>(null)
+  const focusNextHeading = useRef(false)
+  const [vacanciesOnly, setVacanciesOnly] = useState(false)
   const [requestFilter, setRequestFilter] = useState<RequestFilter>("active")
   const [announcement, setAnnouncement] = useState("")
   const requests = useRequests()
@@ -64,6 +69,10 @@ export function Dashboard({
   const active = activeRequests(requests)
   const requestGroups = {
     active: { label: messages.active, requests: active },
+    urgent: {
+      label: messages.priority.Urgent,
+      requests: urgentRequests(requests),
+    },
     attention: { label: messages.needsAttention, requests: attention },
     resolved: {
       label: messages.status.Resolved,
@@ -126,7 +135,14 @@ export function Dashboard({
     target?.focus()
   }, [dialogOpen, overlay])
 
-  function changeView(next: View) {
+  useLayoutEffect(() => {
+    if (!focusNextHeading.current) return
+    focusNextHeading.current = false
+    pageHeading.current?.focus({ preventScroll: true })
+  }, [view])
+
+  function changeView(next: View, focusHeading = false) {
+    focusNextHeading.current = focusHeading && next !== view
     setView(next)
     // Keep the URL in step so a reload or shared link lands on the same view.
     const url = new URL(window.location.href)
@@ -134,6 +150,16 @@ export function Dashboard({
     else url.searchParams.set("view", next)
     window.history.replaceState(window.history.state, "", url)
     window.scrollTo({ top: 0 })
+  }
+
+  function openProperties(onlyVacancies = false) {
+    setVacanciesOnly(onlyVacancies)
+    changeView("properties", true)
+  }
+
+  function openRequestQueue(filter: RequestFilter) {
+    setRequestFilter(filter)
+    changeView("maintenance", true)
   }
 
   function openOverlay(next: Overlay) {
@@ -197,6 +223,7 @@ export function Dashboard({
       onAttention={() => openOverlay({ type: "attention" })}
       attentionCount={attention.length}
       title={heading.title}
+      headingRef={pageHeading}
       description={"description" in heading ? heading.description : undefined}
       actions={
         showNewRequest ? (
@@ -214,15 +241,19 @@ export function Dashboard({
           requests={requests}
           onProperty={openProperty}
           onRequest={openRequest}
-          onProperties={() => changeView("properties")}
-          onAttention={() => {
-            setRequestFilter("attention")
-            changeView("maintenance")
-          }}
+          onProperties={openProperties}
+          onRent={() => changeView("rent", true)}
+          onUrgent={() => openRequestQueue("urgent")}
+          onAttention={() => openRequestQueue("attention")}
         />
       )}
       {view === "properties" && (
-        <PropertyList requests={requests} onProperty={openProperty} />
+        <PropertyList
+          requests={requests}
+          onProperty={openProperty}
+          vacanciesOnly={vacanciesOnly}
+          onVacanciesOnlyChange={setVacanciesOnly}
+        />
       )}
       {view === "maintenance" && (
         <section className="rounded-(--radius-card) border border-border bg-card px-5 py-4 shadow-panel sm:px-6">
@@ -231,7 +262,7 @@ export function Dashboard({
             role="group"
             aria-label={messages.filterRequests}
           >
-            {(["active", "attention", "resolved"] as const).map((filter) => (
+            {requestFilters.map((filter) => (
               <Button
                 key={filter}
                 variant={requestFilter === filter ? "secondary" : "ghost"}
@@ -251,6 +282,9 @@ export function Dashboard({
           <RequestList
             requests={requestGroups[requestFilter].requests}
             onRequest={openRequest}
+            emptyMessage={
+              requestFilter === "urgent" ? messages.noUrgentRequests : undefined
+            }
           />
         </section>
       )}
@@ -310,10 +344,7 @@ export function Dashboard({
               <DialogTitle className="pr-8 text-xl font-medium tracking-tight">
                 {messages.needsAttention}
               </DialogTitle>
-              <DialogDescription className="mt-1.5 mb-2 text-sm text-muted-foreground">
-                {messages.attentionDescription}
-              </DialogDescription>
-              <div className="max-h-[55svh] overflow-y-auto p-0.5">
+              <div className="mt-2 max-h-[55svh] overflow-y-auto p-0.5">
                 <RequestList requests={attention} onRequest={openRequest} />
               </div>
             </>

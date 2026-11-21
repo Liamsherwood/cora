@@ -37,9 +37,11 @@ export function RequestBadge({ request }: { request: Request }) {
 export function RequestList({
   requests,
   onRequest,
+  emptyMessage,
 }: {
   requests: Request[]
   onRequest: (request: Request) => void
+  emptyMessage?: string
 }) {
   const { messages } = useDashboardLocale()
   const properties = useProperties()
@@ -51,7 +53,7 @@ export function RequestList({
           size={18}
           className="text-success"
         />
-        {messages.noRequests}
+        {emptyMessage ?? messages.noRequests}
       </div>
     )
   }

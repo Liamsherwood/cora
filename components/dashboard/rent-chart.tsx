@@ -1,3 +1,5 @@
+import type { ReactNode } from "react"
+
 import { cn } from "@/lib/utils"
 
 import { formatMessage, useDashboardLocale } from "./locale"
@@ -38,15 +40,10 @@ export function RentChart({
       )}
     >
       <figcaption className="mb-6 space-y-3">
-        <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
-          <div>
-            <h2 className="text-base font-medium tracking-tight">
-              {messages.simulatedCollections}
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {messages.chartDescription}
-            </p>
-          </div>
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+          <h2 className="text-base font-medium tracking-tight">
+            {messages.simulatedCollections}
+          </h2>
           {monthControl}
         </div>
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
@@ -162,4 +159,3 @@ export function RentChart({
     </figure>
   )
 }
-import type { ReactNode } from "react"

@@ -68,11 +68,16 @@ export function activeRequests(requests: Request[]) {
   return requests.filter(({ status }) => status !== "Resolved")
 }
 
+export function urgentRequests(requests: Request[]) {
+  return requests.filter(
+    ({ priority, status }) => priority === "Urgent" && status !== "Resolved"
+  )
+}
+
 export function attentionRequests(requests: Request[]) {
-  const open = activeRequests(requests)
   return [
-    ...open.filter(({ priority }) => priority === "Urgent"),
-    ...open.filter(
+    ...urgentRequests(requests),
+    ...requests.filter(
       ({ status, priority }) =>
         status === "Awaiting vendor" && priority !== "Urgent"
     ),

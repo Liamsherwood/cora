@@ -12,7 +12,7 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import type { ReactNode } from "react"
+import type { ReactNode, Ref } from "react"
 
 import { Button, buttonVariants } from "@/components/ui/button"
 import {
@@ -354,6 +354,7 @@ export function WorkspaceShell({
   onAttention,
   attentionCount,
   title,
+  headingRef,
   description,
   actions,
   children,
@@ -362,6 +363,7 @@ export function WorkspaceShell({
   onAttention?: () => void
   attentionCount?: number
   title: ReactNode
+  headingRef?: Ref<HTMLHeadingElement>
   description?: ReactNode
   actions?: ReactNode
   children: ReactNode
@@ -390,7 +392,11 @@ export function WorkspaceShell({
         >
           <div className="mb-6 flex flex-wrap items-end justify-between gap-x-6 gap-y-4 sm:mb-7">
             <div>
-              <h1 className="text-[30px] leading-[1.1] font-medium tracking-[-0.045em] sm:text-[38px]">
+              <h1
+                ref={headingRef}
+                tabIndex={headingRef ? -1 : undefined}
+                className="text-[30px] leading-[1.1] font-medium tracking-[-0.045em] focus:outline-none sm:text-[38px]"
+              >
                 {title}
               </h1>
               {description && (
