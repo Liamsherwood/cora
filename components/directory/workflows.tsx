@@ -10,6 +10,7 @@ import {
   Empty,
   Pager,
   Panel,
+  serviceName,
   type DirectoryMessages,
 } from "./ui"
 
@@ -46,7 +47,7 @@ export async function WorkflowsTab({
                   {m.unit}
                 </th>
                 <th scope="col" className="px-3 py-2.5 font-medium">
-                  {m.partner}
+                  {m.service}
                 </th>
                 <th scope="col" className="px-3 py-2.5 font-medium">
                   {m.state}
@@ -83,7 +84,9 @@ export async function WorkflowsTab({
                       {r.eventType}
                     </p>
                   </th>
-                  <td className="px-3 py-2.5">{r.partner ?? "–"}</td>
+                  <td className="px-3 py-2.5">
+                    {serviceName(messages.run, r.category, r.partner)}
+                  </td>
                   <td className="px-3 py-2.5">
                     <StateBadge state={r.state} />
                   </td>

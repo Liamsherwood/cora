@@ -5,12 +5,16 @@ import {
   contactTenantAction,
   fireMoveInAction,
 } from "@/app/[locale]/(demo)/actions"
+import type { DocumentMessages } from "@/components/documents/format"
+import { DocumentList } from "@/components/documents/list"
 import { ActionButton } from "@/components/partner-connect/action-button"
-import { StateBadge, Tracking } from "@/components/partner-connect/status"
+import { StateBadge } from "@/components/partner-connect/status"
+import { CoraAvatar } from "@/components/tickets/cora-avatar"
 import { buttonVariants } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { findUnitsByTenant } from "@/lib/centrix/directory"
-import { getUnitSnapshot, listUnits } from "@/lib/centrix/repository"
+import { findUnitsByTenant, listDirectoryUnits } from "@/lib/centrix/directory"
+import { listUnitDocuments } from "@/lib/centrix/documents"
+import { getUnitSnapshot } from "@/lib/centrix/repository"
 import type { DB } from "@/lib/db"
 import { DEMO_UNIT_ID } from "@/lib/demo"
 import { AppError } from "@/lib/errors"
@@ -18,6 +22,7 @@ import { formatMessage as fm } from "@/lib/i18n/format-message"
 import { isUuid } from "@/lib/ids"
 import { cn } from "@/lib/utils"
 import { getRunView, listRuns } from "@/lib/workflow/engine"
+import { TRACKING_STEPS } from "@/lib/workflow/states"
 
 import type { DirectoryFormat } from "./format"
 import {
@@ -27,6 +32,7 @@ import {
   GroupLabel,
   Panel,
   SearchForm,
+  serviceName,
   type DirectoryMessages,
 } from "./ui"
 
@@ -36,7 +42,7 @@ const CONTRACT_BADGE: Record<string, string> = {
   cancelled: "rejected",
 }
 
-type UnitRow = Awaited<ReturnType<typeof listUnits>>[number]
+type UnitRow = Awaited<ReturnType<typeof listDirectoryUnits>>[number]
 
 /**
  * Units: every unit grouped by property, and for the selected one its master data, the
@@ -49,6 +55,7 @@ export async function UnitsTab({
   unitParam,
   runParam,
   messages,
+  documents,
   format,
 }: {
   db: DB
@@ -57,10 +64,11 @@ export async function UnitsTab({
   unitParam: string | undefined
   runParam: string | undefined
   messages: DirectoryMessages
+  documents: DocumentMessages
   format: DirectoryFormat
 }) {
   const [units, tenantMatches] = await Promise.all([
-    listUnits(db),
+    listDirectoryUnits(db),
     findUnitsByTenant(db, q),
   ])
   const term = q.trim().toLocaleLowerCase()
@@ -68,7 +76,7 @@ export async function UnitsTab({
     ? units.filter(
         (u) =>
           tenantMatches.includes(u.id) ||
-          `${u.street} ${u.city ?? ""} ${u.identifier}`
+          `${u.street} ${u.city ?? ""} ${u.identifier} ${u.tenant ?? ""}`
             .toLocaleLowerCase()
             .includes(term)
       )
@@ -80,9 +88,10 @@ export async function UnitsTab({
       : DEMO_UNIT_ID
   const href = (params: { unit?: string; run?: string }) =>
     directoryHref(locale, { q, unit: unitId, ...params })
+  const m = messages.unit
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[300px_minmax(0,1fr)] lg:items-start">
+    <div className="grid gap-5 lg:grid-cols-[320px_minmax(0,1fr)] lg:items-start">
       <Panel flush>
         <div className="border-b border-border p-3">
           <SearchForm
@@ -115,9 +124,25 @@ export async function UnitsTab({
                         href={directoryHref(locale, { q, unit: u.id })}
                         aria-current={u.id === unitId ? "page" : undefined}
                         prefetch={false}
-                        className="block px-4 py-2 text-sm hover:bg-muted/60 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring aria-[current=page]:bg-accent aria-[current=page]:font-medium aria-[current=page]:text-accent-foreground"
+                        className="group flex items-center gap-3 px-4 py-2.5 hover:bg-muted/60 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring aria-[current=page]:bg-accent aria-[current=page]:text-accent-foreground"
                       >
-                        {u.identifier}
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-sm font-medium">
+                            {u.identifier}
+                          </span>
+                          <span className="block truncate text-xs text-muted-foreground">
+                            {u.tenant ?? m.vacant}
+                            {u.size_sqm != null && ` · ${u.size_sqm} m²`}
+                          </span>
+                        </span>
+                        {u.open_workflows > 0 && (
+                          <StateBadge
+                            state="detected"
+                            label={fm(m.openWorkflows, {
+                              count: format.number(u.open_workflows),
+                            })}
+                          />
+                        )}
                       </Link>
                     </li>
                   ))}
@@ -136,6 +161,7 @@ export async function UnitsTab({
           runParam={runParam}
           href={href}
           messages={messages}
+          documents={documents}
           format={format}
         />
       ) : (
@@ -154,6 +180,7 @@ async function UnitDetail({
   runParam,
   href,
   messages,
+  documents,
   format,
 }: {
   db: DB
@@ -162,15 +189,17 @@ async function UnitDetail({
   runParam: string | undefined
   href: (params: { run?: string }) => string
   messages: DirectoryMessages
+  documents: DocumentMessages
   format: DirectoryFormat
 }) {
   const m = messages.unit
-  const [snapshot, runs] = await Promise.all([
+  const [snapshot, runs, files] = await Promise.all([
     getUnitSnapshot(db, unitId).catch((e) => {
       if (e instanceof AppError && e.status === 404) notFound()
       throw e
     }),
     listRuns(db, { unitId }),
+    listUnitDocuments(db, unitId),
   ])
   const selectedRun =
     runs.find((r) => r.id === runParam)?.id ?? runs[0]?.id ?? null
@@ -283,6 +312,18 @@ async function UnitDetail({
             ))}
           </ul>
         )}
+        <Separator className="my-4" />
+        <GroupLabel>{documents.heading}</GroupLabel>
+        {files.length === 0 ? (
+          <Empty>{messages.none}</Empty>
+        ) : (
+          <DocumentList
+            links={files}
+            locale={locale}
+            messages={documents}
+            format={format}
+          />
+        )}
       </Panel>
 
       {runs.length > 0 && (
@@ -299,7 +340,12 @@ async function UnitDetail({
                 "rounded-(--radius-chip)"
               )}
             >
-              {r.partnerName ?? r.partnerSlug} <StateBadge state={r.state} />
+              {serviceName(
+                messages.run,
+                (r.offer as { category?: string } | null)?.category,
+                r.partnerName ?? r.partnerSlug
+              )}{" "}
+              <StateBadge state={r.state} />
             </Link>
           ))}
         </nav>
@@ -344,28 +390,48 @@ function groupByProperty(units: UnitRow[]) {
   )
 }
 
+type RunView = Awaited<ReturnType<typeof getRunView>>
+
+type RunMessages = DirectoryMessages["run"]
+
+const details = (a: RunView["audit"][number]) =>
+  (a.details ?? {}) as Record<string, unknown>
+
+function channelLabel(m: RunMessages, channel: unknown) {
+  return typeof channel === "string" && channel in m.channels
+    ? m.channels[channel as keyof RunMessages["channels"]]
+    : String(channel ?? "–")
+}
+
 function RunPanel({
   view: v,
   locale,
   messages,
   format,
 }: {
-  view: Awaited<ReturnType<typeof getRunView>>
+  view: RunView
   locale: string
   messages: DirectoryMessages
   format: DirectoryFormat
 }) {
   const m = messages.run
   const o = v.offer
+  const name = v.tenant?.name ?? m.theTenant
+  const aside = Boolean(v.consent || v.order)
   return (
-    <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+    <div
+      className={cn(
+        "grid gap-5",
+        aside && "xl:grid-cols-[minmax(0,1fr)_320px]"
+      )}
+    >
       <div className="min-w-0 space-y-5">
         <Panel
-          title={fm(m.title, { partner: v.partner?.name ?? "–" })}
+          title={serviceName(m, o?.category, v.partner?.name)}
           action={<StateBadge state={v.run.state} />}
         >
-          <div className="space-y-4">
-            <Tracking state={v.run.state} category={o?.category} />
+          <div className="space-y-5">
+            <Stepper view={v} m={m} format={format} />
             {o && (
               <div className="rounded-(--radius-card) bg-muted p-3 text-sm">
                 <p className="font-medium">
@@ -398,107 +464,86 @@ function RunPanel({
                 )}
               </div>
             )}
-            {v.run.state === "detected" && (
-              <div className="rounded-(--radius-card) border border-dashed border-border p-3">
-                <p className="mb-2 text-sm">
-                  <span className="font-medium">{m.suggestedStep}</span>{" "}
-                  {fm(m.callWithOffer, {
-                    name: v.tenant?.name ?? m.theTenant,
-                  })}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  <ActionButton
-                    action={contactTenantAction.bind(null, v.run.id, "voice")}
-                  >
-                    {m.callTenant}
-                  </ActionButton>
-                  <ActionButton
-                    variant="outline"
-                    action={contactTenantAction.bind(null, v.run.id, "portal")}
-                  >
-                    {m.sendToPortal}
-                  </ActionButton>
-                </div>
-              </div>
-            )}
-            {v.run.state !== "detected" && v.tenant && (
-              <p className="text-sm">
-                <Link
-                  className="underline underline-offset-4"
-                  href={`/${locale}/portal/${v.tenant.id}`}
-                >
-                  {fm(m.openPortal, { name: v.tenant.name })} →
-                </Link>
-              </p>
-            )}
+            <NextStep
+              view={v}
+              name={name}
+              locale={locale}
+              m={m}
+              format={format}
+            />
           </div>
         </Panel>
 
+        <Panel title={m.conversation}>
+          {v.messages.length === 0 ? (
+            <Empty>{m.noMessages}</Empty>
+          ) : (
+            <ol className="space-y-3">
+              {v.messages.map((msg) => (
+                <ChatMessage
+                  key={msg.id}
+                  role={msg.role}
+                  content={msg.content}
+                  sender={
+                    msg.role === "agent"
+                      ? m.cora
+                      : msg.role === "tenant"
+                        ? name
+                        : msg.role === "partner"
+                          ? (v.partner?.name ?? m.actors.partner)
+                          : m.actors.system
+                  }
+                  time={format.time(msg.sentAt)}
+                />
+              ))}
+            </ol>
+          )}
+        </Panel>
+
         <Panel title={m.timeline}>
-          <ol className="space-y-1.5 text-sm">
-            {v.audit.map((a) => (
-              <li key={a.id} className="flex gap-3">
-                <span className="w-12 shrink-0 tabular-nums text-muted-foreground">
-                  {format.time(a.occurredAt)}
-                </span>
-                <span className="w-28 shrink-0 truncate text-muted-foreground">
-                  {a.actor}
-                </span>
-                <span className="min-w-0">
-                  {a.type === "state_change" ? (
-                    <>
-                      {a.fromState} →{" "}
-                      <span className="font-medium">{a.toState}</span>
-                    </>
-                  ) : (
-                    a.type.replace(/_/g, " ")
-                  )}
-                  {a.costCents > 0 && (
-                    <span className="ml-2 text-xs text-muted-foreground">
-                      ({format.cents(a.costCents)})
-                    </span>
-                  )}
-                </span>
-              </li>
-            ))}
+          <ol className="space-y-2 text-sm">
+            {v.audit.map((a) => {
+              const d = details(a)
+              const actor =
+                a.actor in m.actors
+                  ? m.actors[a.actor as keyof RunMessages["actors"]]
+                  : a.actor
+              return (
+                <li key={a.id} className="flex gap-3">
+                  <span className="w-12 shrink-0 tabular-nums text-muted-foreground">
+                    {format.time(a.occurredAt)}
+                  </span>
+                  <span className="w-28 shrink-0 truncate text-muted-foreground">
+                    {actor}
+                  </span>
+                  <span className="min-w-0">
+                    <AuditLabel type={a.type} a={a} d={d} m={m} />
+                    {typeof d.channel === "string" && (
+                      <span className="text-muted-foreground">
+                        {" "}
+                        {fm(m.via, { channel: channelLabel(m, d.channel) })}
+                      </span>
+                    )}
+                    {a.costCents > 0 && (
+                      <span className="ml-2 text-xs tabular-nums text-muted-foreground">
+                        ({format.cents(a.costCents)})
+                      </span>
+                    )}
+                  </span>
+                </li>
+              )
+            })}
           </ol>
         </Panel>
       </div>
 
-      <div className="space-y-5">
-        <Panel title={m.costPerCase}>
-          <dl className="space-y-2 text-sm">
-            <Metric
-              k={m.aiCost}
-              v={format.cents(v.metrics.ai_cost_cents)}
-              strong
-            />
-            <Metric
-              k={m.manualTouches}
-              v={format.number(v.metrics.manual_touches)}
-              strong
-            />
-            <Metric
-              k={m.automatedMessages}
-              v={format.number(v.metrics.automated_messages)}
-            />
-            <Separator />
-            <Metric
-              k={m.baseline}
-              v={fm(m.baselineValue, {
-                minutes: format.number(v.metrics.baseline_manual_minutes),
-                cost: format.cents(v.metrics.baseline_manual_cost_cents),
-              })}
-            />
-          </dl>
-          <p className="mt-2 text-xs text-muted-foreground">{m.baselineNote}</p>
-        </Panel>
+      <div className={cn("space-y-5", !aside && "hidden")}>
         {v.consent && (
           <Panel title={m.consent}>
             <div className="space-y-1 text-sm">
               <p>
                 {fm(m.consentGiven, {
-                  channel: v.consent.channel,
+                  channel: channelLabel(m, v.consent.channel),
                   time: format.time(v.consent.givenAt),
                 })}
               </p>
@@ -527,11 +572,277 @@ function RunPanel({
   )
 }
 
-function Metric({ k, v, strong }: { k: string; v: string; strong?: boolean }) {
+/** The workflow's steps with when each one was reached. */
+function Stepper({
+  view: v,
+  m,
+  format,
+}: {
+  view: RunView
+  m: RunMessages
+  format: DirectoryFormat
+}) {
+  const state = v.run.state
+  const order = TRACKING_STEPS.map((s) => s.state)
+  const reached = state === "closed" ? order.length - 1 : order.indexOf(state)
+  const failed =
+    state === "declined" ||
+    state === "rejected" ||
+    state === "no_eligible_offer"
+  const reachedAt = new Map<string, Date>()
+  reachedAt.set("detected", v.run.createdAt)
+  for (const a of v.audit)
+    if (a.type === "state_change" && a.toState && !reachedAt.has(a.toState))
+      reachedAt.set(a.toState, a.occurredAt)
+
   return (
-    <div className="flex justify-between gap-2">
-      <dt className="text-muted-foreground">{k}</dt>
-      <dd className={cn("text-right", strong && "font-semibold")}>{v}</dd>
+    <ol className="grid grid-cols-3 gap-x-2 gap-y-4 sm:grid-cols-6">
+      {TRACKING_STEPS.map((s, i) => {
+        const done = !failed && i <= reached
+        const current = done && i === reached && !v.run.terminal
+        return (
+          <li key={s.state} className="relative min-w-0">
+            <div className="flex items-center">
+              <span
+                className={cn(
+                  "relative z-10 flex size-3 shrink-0 rounded-full",
+                  done ? "bg-primary" : "bg-border",
+                  current && "ring-4 ring-primary/20"
+                )}
+                aria-hidden
+              />
+              {i < TRACKING_STEPS.length - 1 && (
+                <span
+                  className={cn(
+                    "ml-1 h-px flex-1",
+                    done && i < reached ? "bg-primary" : "bg-border"
+                  )}
+                  aria-hidden
+                />
+              )}
+            </div>
+            <p
+              className={cn(
+                "mt-2 text-xs leading-snug text-pretty",
+                done ? "font-medium text-foreground" : "text-muted-foreground"
+              )}
+            >
+              {m.steps[s.state as keyof RunMessages["steps"]]}
+            </p>
+            <p className="text-xs tabular-nums text-muted-foreground">
+              {done ? format.time(reachedAt.get(s.state)) : " "}
+            </p>
+          </li>
+        )
+      })}
+    </ol>
+  )
+}
+
+/** What happens next, for every state: the property manager never has to guess. */
+function NextStep({
+  view: v,
+  name,
+  locale,
+  m,
+  format,
+}: {
+  view: RunView
+  name: string
+  locale: string
+  m: RunMessages
+  format: DirectoryFormat
+}) {
+  const state = v.run.state
+  const copy = m.next[state as keyof RunMessages["next"]] ?? m.next.closed
+  const values = { name, partner: v.partner?.name ?? "–" }
+  const sent = v.audit.find(
+    (a) => a.type === "state_change" && a.toState === "offer_sent"
+  )
+  const sentChannel = sent ? details(sent).channel : undefined
+  const whatsappSent = v.audit.some((a) => a.type === "whatsapp.sent")
+  const canWhatsApp = Boolean(v.tenant?.whatsappOptIn)
+  const failed =
+    state === "declined" ||
+    state === "rejected" ||
+    state === "no_eligible_offer"
+
+  return (
+    <div
+      className={cn(
+        "rounded-(--radius-card) border p-4",
+        failed
+          ? "border-destructive/30 bg-destructive/5"
+          : state === "active" || state === "closed"
+            ? "border-success/30 bg-success-surface"
+            : "border-dashed border-border"
+      )}
+    >
+      <p className="text-xs font-medium text-muted-foreground">{m.nextStep}</p>
+      <p className="mt-1 font-medium">{fm(copy.title, values)}</p>
+      <p className="mt-1 text-sm text-muted-foreground">
+        {state === "offer_sent" && sent
+          ? `${fm(m.sentVia, {
+              channel: channelLabel(m, sentChannel),
+              time: format.time(sent.occurredAt),
+            })} `
+          : ""}
+        {fm(copy.body, values)}
+      </p>
+
+      {state === "detected" && (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <ActionButton
+            action={contactTenantAction.bind(null, v.run.id, "voice", locale)}
+          >
+            {m.callTenant}
+          </ActionButton>
+          <ActionButton
+            variant="outline"
+            disabled={!canWhatsApp}
+            title={canWhatsApp ? undefined : m.noWhatsApp}
+            action={contactTenantAction.bind(
+              null,
+              v.run.id,
+              "whatsapp",
+              locale
+            )}
+          >
+            {m.sendWhatsApp}
+          </ActionButton>
+          <ActionButton
+            variant="ghost"
+            action={contactTenantAction.bind(null, v.run.id, "portal", locale)}
+          >
+            {m.sendToPortal}
+          </ActionButton>
+          {!canWhatsApp && (
+            <span className="text-xs text-muted-foreground">
+              {m.noWhatsApp}
+            </span>
+          )}
+        </div>
+      )}
+
+      {state !== "detected" && state !== "no_eligible_offer" && (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          {state === "offer_sent" && canWhatsApp && !whatsappSent && (
+            <ActionButton
+              variant="outline"
+              action={contactTenantAction.bind(
+                null,
+                v.run.id,
+                "whatsapp",
+                locale
+              )}
+            >
+              {m.remindWhatsApp}
+            </ActionButton>
+          )}
+          {v.tenant && (
+            <Link
+              className={buttonVariants({ variant: "ghost" })}
+              href={`/${locale}/portal/${v.tenant.id}`}
+            >
+              {fm(m.openPortal, { name })} →
+            </Link>
+          )}
+          {(state === "ordered" ||
+            state === "confirmed" ||
+            state === "rejected") && (
+            <Link
+              className={buttonVariants({ variant: "ghost" })}
+              href={`/${locale}/partner`}
+            >
+              {m.openPartner} →
+            </Link>
+          )}
+        </div>
+      )}
     </div>
+  )
+}
+
+function ChatMessage({
+  role,
+  content,
+  sender,
+  time,
+}: {
+  role: string
+  content: string
+  sender: string
+  time: string
+}) {
+  if (role === "system" || role === "partner")
+    return (
+      <li className="rounded-(--radius-card) border border-dashed border-border px-3 py-2 text-xs text-muted-foreground">
+        <span className="font-medium text-foreground">{sender}</span>{" "}
+        <span className="tabular-nums">{time}</span>
+        <p className="mt-0.5">{content}</p>
+      </li>
+    )
+  const mine = role === "tenant"
+  return (
+    <li className={cn("flex", mine ? "justify-end" : "justify-start")}>
+      <div className="max-w-[85%]">
+        <p
+          className={cn(
+            "mb-1 flex items-center gap-1.5 text-xs text-muted-foreground",
+            mine && "justify-end"
+          )}
+        >
+          {!mine && <CoraAvatar size={16} />}
+          <span className="font-medium">{sender}</span>
+          <span className="tabular-nums">{time}</span>
+        </p>
+        <p
+          className={cn(
+            "rounded-(--radius-card) px-3 py-2 text-sm",
+            mine ? "bg-primary text-primary-foreground" : "bg-muted"
+          )}
+        >
+          {content}
+        </p>
+      </div>
+    </li>
+  )
+}
+
+function AuditLabel({
+  type,
+  a,
+  d,
+  m,
+}: {
+  type: string
+  a: RunView["audit"][number]
+  d: Record<string, unknown>
+  m: RunMessages
+}) {
+  if (type === "state_change")
+    return (
+      <>
+        {a.fromState
+          ? (m.steps[a.fromState as keyof RunMessages["steps"]] ?? a.fromState)
+          : "–"}{" "}
+        →{" "}
+        <span className="font-medium">
+          {m.steps[a.toState as keyof RunMessages["steps"]] ??
+            a.toState?.replace(/_/g, " ")}
+        </span>
+      </>
+    )
+  const key =
+    type === "whatsapp.sent"
+      ? d.reminder
+        ? "whatsapp_reminder"
+        : "whatsapp_sent"
+      : type
+  return (
+    <span className={cn(type === "error" && "text-destructive")}>
+      {m.events[key as keyof RunMessages["events"]] ?? type.replace(/_/g, " ")}
+      {type === "error" && typeof d.reason === "string" && `: ${d.reason}`}
+    </span>
   )
 }

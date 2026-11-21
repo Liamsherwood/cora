@@ -12,7 +12,8 @@ import { buttonVariants } from "@/components/ui/button"
 import { getDb } from "@/lib/db"
 import { caseRef, isUuid, ticketRef } from "@/lib/ids"
 import { getMessages, type Messages } from "@/lib/i18n/dictionaries"
-import { isLocale, localeSettings } from "@/lib/i18n/locales"
+import { isLocale, localeSettings, type Locale } from "@/lib/i18n/locales"
+import { formatMessage as fm } from "@/lib/i18n/format-message"
 import { listTicketActivity } from "@/lib/tickets/activity"
 import type { TicketClassification } from "@/lib/tickets/classification"
 import {
@@ -26,6 +27,7 @@ import {
   listPublicTickets,
   ticketPageSize,
 } from "@/lib/tickets/repository"
+import { getCaseCostSummary } from "@/lib/workflow/engine"
 import styles from "./run-details.module.css"
 
 type TicketRow =
@@ -109,15 +111,16 @@ export default async function TicketsPage({
   const resolvedDemoIds = resolvedDemoTickets(query.resolved)
   const examples = listDemoTickets(messages.demo, resolvedDemoIds)
   const requestedExample = examples.find(({ id }) => id === query.ticket)
-  const [rows, requestedTicket, activity] = db
+  const [rows, requestedTicket, activity, cost] = db
     ? await Promise.all([
         listPublicTickets(db, page),
         !requestedExample && isUuid(query.ticket)
           ? getPublicTicket(db, query.ticket)
           : null,
         listTicketActivity(db),
+        getCaseCostSummary(db),
       ])
-    : [[], null, []]
+    : [[], null, [], null]
   const visibleTickets: TicketRow[] = [
     ...rows.slice(0, ticketPageSize),
     ...(page === 1 ? examples : []),
@@ -153,6 +156,9 @@ export default async function TicketsPage({
         }
       >
         {db ? <AutoRefresh /> : null}
+        {cost ? (
+          <CaseCost cost={cost} locale={locale} messages={messages.cost} />
+        ) : null}
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.65fr)] lg:items-start">
           <section
             aria-labelledby="ticket-list"
@@ -294,15 +300,20 @@ export default async function TicketsPage({
 
           {ticket ? (
             <section
-              aria-labelledby="ticket-detail"
+              aria-labelledby="ticket-detail-title"
               className="rounded-(--radius-card) border border-border bg-card"
             >
+              {/* Scroll target for the stacked layout only: side by side, the detail is
+                  already in view, and scrolling to it would shift the whole page.
+                  `display: none` makes the hash scroll a no-op. */}
+              <span
+                id="ticket-detail"
+                aria-hidden="true"
+                className="block scroll-mt-4 lg:hidden"
+              />
               <div className="border-b border-border px-5 py-5 sm:px-6">
                 <div className="flex flex-wrap items-center gap-2.5">
-                  <h2
-                    id="ticket-detail"
-                    className="scroll-mt-4 text-lg font-medium"
-                  >
+                  <h2 id="ticket-detail-title" className="text-lg font-medium">
                     {ticketTitle(ticket, messages)} · {ticketRef(ticket.id)}
                   </h2>
                   <TicketStatus
@@ -498,5 +509,86 @@ export default async function TicketsPage({
         </div>
       </WorkspaceShell>
     </DashboardLocaleProvider>
+  )
+}
+
+function CaseCost({
+  cost,
+  locale,
+  messages,
+}: {
+  cost: Awaited<ReturnType<typeof getCaseCostSummary>>
+  locale: Locale
+  messages: Messages["tickets"]["cost"]
+}) {
+  const intl = localeSettings[locale].intlLocale
+  const eur = new Intl.NumberFormat(intl, {
+    style: "currency",
+    currency: "EUR",
+  })
+  const num = new Intl.NumberFormat(intl)
+  const cents = (c: number) => eur.format(c / 100)
+  const stats = [
+    {
+      label: messages.aiPerCase,
+      value: cents(cost.ai_cost_per_case_cents),
+      note: fm(messages.aiTotal, { total: cents(cost.ai_cost_cents) }),
+      strong: true,
+    },
+    {
+      label: messages.baseline,
+      value: cents(cost.baseline_cents),
+      note: fm(messages.baselineValue, {
+        minutes: num.format(cost.baseline_minutes),
+      }),
+    },
+    {
+      label: messages.cases,
+      value: num.format(cost.cases),
+      note: fm(messages.touches, {
+        manual: num.format(cost.manual_touches),
+        automated: num.format(cost.automated_messages),
+      }),
+    },
+    {
+      label: messages.saved,
+      value: cents(cost.saved_cents),
+      note: null,
+      strong: true,
+    },
+  ]
+  return (
+    <section
+      aria-labelledby="case-cost"
+      className="mb-5 rounded-(--radius-card) border border-border bg-card"
+    >
+      <div className="border-b border-border px-5 py-4 sm:px-6">
+        <h2 id="case-cost" className="text-sm font-medium">
+          {messages.title}
+        </h2>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          {messages.description}
+        </p>
+      </div>
+      <dl className="grid grid-cols-2 divide-border lg:grid-cols-4 lg:divide-x">
+        {stats.map((s) => (
+          <div key={s.label} className="min-w-0 px-5 py-4 sm:px-6">
+            <dt className="text-xs text-muted-foreground">{s.label}</dt>
+            <dd
+              className={
+                s.strong
+                  ? "mt-1 text-xl font-medium tabular-nums"
+                  : "mt-1 text-xl tabular-nums"
+              }
+            >
+              {s.value}
+            </dd>
+            {s.note ? (
+              <dd className="mt-0.5 text-xs text-muted-foreground">{s.note}</dd>
+            ) : null}
+          </div>
+        ))}
+      </dl>
+    </section>
   )
 }

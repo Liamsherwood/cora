@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
 
+import { demoResetEvent } from "./cora-dispatch"
 import { demoRequests } from "./data"
 import { useDashboardLocale } from "./locale"
 import { updateRequests } from "./request-store"
@@ -39,6 +40,7 @@ function useDemoReset() {
     startTransition(async () => {
       updateRequests(() => [...demoRequests])
       const { error } = await resetDemoAction()
+      window.dispatchEvent(new Event(demoResetEvent))
       setResult(error ? "error" : "done")
     })
   }
@@ -97,7 +99,7 @@ export function UserMenu({ compact = false }: { compact?: boolean }) {
                     status === "error" && "text-destructive"
                   )}
                 >
-                  {statusText ?? messages.demoWorkspace}
+                  {statusText ?? messages.userRole}
                 </span>
               </span>
               <HugeiconsIcon

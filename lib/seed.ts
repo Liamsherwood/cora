@@ -199,7 +199,9 @@ const SeedSchema = z.object({
       z.object({
         id,
         // Dotted names like the connector triggers: tenant.move_in, case.created, ...
-        type: z.string().regex(/^[a-z_]+(\.[a-z_]+)+$/, "expected e.g. tenant.move_in"),
+        type: z
+          .string()
+          .regex(/^[a-z_]+(\.[a-z_]+)+$/, "expected e.g. tenant.move_in"),
         unit_id: id,
         party_id: id.nullish(),
         occurred_at: z.iso.datetime({ offset: true }),
@@ -490,6 +492,18 @@ async function clearDemoActivity(tx: Tx, data: SeedData) {
   await tx.delete(t.consents).where(inArray(t.consents.workflowRunId, runs))
   await tx.delete(t.workflowRuns).where(inArray(t.workflowRuns.id, runs))
   await tx.delete(t.events).where(inArray(t.events.unitId, unitIds))
+
+  // Cora's dispatches and the case and work order each one booked.
+  const dispatched = await tx.delete(t.maintenanceDispatches).returning({
+    caseId: t.maintenanceDispatches.caseId,
+    workOrderId: t.maintenanceDispatches.workOrderId,
+  })
+  const orderIds = dispatched.flatMap((d) => d.workOrderId ?? [])
+  if (orderIds.length)
+    await tx.delete(t.workOrders).where(inArray(t.workOrders.id, orderIds))
+  const caseIds = dispatched.flatMap((d) => d.caseId ?? [])
+  if (caseIds.length)
+    await tx.delete(t.cases).where(inArray(t.cases.id, caseIds))
 }
 
 /**

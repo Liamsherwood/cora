@@ -23,7 +23,10 @@ export async function generateMetadata({
   const title = isLocale(locale)
     ? (await getMessages(locale)).directory.title
     : "Directory"
-  return { title: `${title} · Centrix`, robots: { index: false, follow: false } }
+  return {
+    title: `${title} · Centrix`,
+    robots: { index: false, follow: false },
+  }
 }
 
 const one = (v: string | string[] | undefined) =>
@@ -47,10 +50,8 @@ export default async function DirectoryPage({
   const page = /^[1-9]\d{0,5}$/.test(one(sp.page) ?? "") ? Number(sp.page) : 1
 
   const db = getDb()
-  const [{ dashboard, directory: messages }, counts] = await Promise.all([
-    getMessages(locale),
-    getDirectoryCounts(db),
-  ])
+  const [{ dashboard, directory: messages, documents }, counts] =
+    await Promise.all([getMessages(locale), getDirectoryCounts(db)])
   const format = directoryFormat(locale)
   const shared = { db, locale, messages, format }
 
@@ -72,6 +73,7 @@ export default async function DirectoryPage({
         {tab === "units" && (
           <UnitsTab
             {...shared}
+            documents={documents}
             q={q}
             unitParam={one(sp.unit)}
             runParam={one(sp.run)}
@@ -80,6 +82,7 @@ export default async function DirectoryPage({
         {tab === "people" && (
           <PeopleTab
             {...shared}
+            documents={documents}
             q={q}
             page={page}
             personParam={one(sp.person)}

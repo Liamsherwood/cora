@@ -35,6 +35,17 @@ export function directoryHref(
   return `/${locale}/services${qs ? `?${qs}` : ""}`
 }
 
+/** A workflow is named after the service it sets up, e.g. "High-speed fibre internet". */
+export function serviceName(
+  m: DirectoryMessages["run"],
+  category: string | null | undefined,
+  fallback: string | null | undefined
+) {
+  return category && category in m.services
+    ? m.services[category as keyof typeof m.services]
+    : (fallback ?? "–")
+}
+
 /** A bordered workspace panel with an optional header, like the dashboard's sections. */
 export function Panel({
   title,

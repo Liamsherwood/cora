@@ -6,7 +6,6 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react"
 
 import { AutoRefresh } from "@/components/partner-connect/auto-refresh"
-import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
 import { getDb } from "@/lib/db"
 import type { Messages } from "@/lib/i18n/dictionaries"
@@ -68,9 +67,6 @@ export async function CoraActivityCard({
             ) : null}
           </div>
         </div>
-        <Badge variant="secondary" className="ml-auto">
-          {labels.demo}
-        </Badge>
       </div>
       {runs.length > 0 ? (
         <ol className="mt-2 divide-y divide-border">

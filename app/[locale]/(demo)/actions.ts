@@ -9,6 +9,7 @@ import { AppError } from "@/lib/errors"
 import { simulatePartnerStatus, SimulatedStatus } from "@/lib/partner/simulator"
 import { resetDemoData } from "@/lib/seed"
 import { startCall } from "@/lib/voice/elevenlabs"
+import { sendOfferWhatsApp } from "@/lib/whatsapp/outbound"
 import {
   acceptOffer,
   declineOffer,
@@ -58,17 +59,19 @@ export async function resetDemoAction() {
 
 export async function contactTenantAction(
   runId: string,
-  channel: "voice" | "portal"
+  channel: "voice" | "whatsapp" | "portal",
+  locale = "de"
 ) {
-  return run((db) =>
-    channel === "voice"
-      ? startCall(db, id(runId))
-      : // A person in centrix approved the suggested step.
-        markOfferSent(db, id(runId), {
-          channel: "portal",
-          actor: "property_manager",
-        })
-  )
+  return run((db) => {
+    if (channel === "voice") return startCall(db, id(runId))
+    if (channel === "whatsapp")
+      return sendOfferWhatsApp(db, id(runId), locale === "en" ? "en" : "de")
+    // A person in centrix approved the suggested step.
+    return markOfferSent(db, id(runId), {
+      channel: "portal",
+      actor: "property_manager",
+    })
+  })
 }
 
 export async function acceptOfferAction(runId: string) {

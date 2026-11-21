@@ -1,5 +1,7 @@
 import Link from "next/link"
 
+import type { DocumentMessages } from "@/components/documents/format"
+import { DocumentList } from "@/components/documents/list"
 import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
@@ -8,6 +10,7 @@ import {
   listPeople,
   DIRECTORY_PAGE_SIZE,
 } from "@/lib/centrix/directory"
+import { personDocuments } from "@/lib/centrix/documents"
 import type { DB } from "@/lib/db"
 import { formatMessage as fm } from "@/lib/i18n/format-message"
 import { isUuid } from "@/lib/ids"
@@ -32,6 +35,7 @@ export async function PeopleTab({
   page,
   personParam,
   messages,
+  documents,
   format,
 }: {
   db: DB
@@ -40,6 +44,7 @@ export async function PeopleTab({
   page: number
   personParam: string | undefined
   messages: DirectoryMessages
+  documents: DocumentMessages
   format: DirectoryFormat
 }) {
   const m = messages.person
@@ -146,6 +151,7 @@ export async function PeopleTab({
           person={person}
           locale={locale}
           messages={messages}
+          documents={documents}
           format={format}
         />
       ) : (
@@ -158,16 +164,20 @@ export async function PeopleTab({
 }
 
 function PersonDetail({
-  person: { party, leases, ownerships, mandates, consents },
+  person,
   locale,
   messages,
+  documents,
   format,
 }: {
   person: NonNullable<Awaited<ReturnType<typeof getPerson>>>
   locale: string
   messages: DirectoryMessages
+  documents: DocumentMessages
   format: DirectoryFormat
 }) {
+  const { party, leases, ownerships, mandates, consents } = person
+  const files = personDocuments(person)
   const m = messages.person
   const isTenant = leases.some(
     (l) => l.role === "tenant" || l.role === "co_tenant"
@@ -289,6 +299,19 @@ function PersonDetail({
               </li>
             ))}
           </ul>
+        </>
+      )}
+
+      {files.length > 0 && (
+        <>
+          <Separator className="my-4" />
+          <GroupLabel>{documents.heading}</GroupLabel>
+          <DocumentList
+            links={files}
+            locale={locale}
+            messages={documents}
+            format={format}
+          />
         </>
       )}
     </Panel>

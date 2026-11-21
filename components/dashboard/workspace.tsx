@@ -75,7 +75,7 @@ function BrandButton({ onView }: { onView?: (view: View) => void }) {
 
 function Brand() {
   return (
-    <span className="inline-flex min-h-8 items-center text-[25px] leading-none font-medium tracking-[-0.06em]">
+    <span className="inline-flex min-h-8 items-center text-[25px] leading-none font-medium tracking-[-0.035em]">
       Centrix
     </span>
   )

@@ -1,8 +1,21 @@
-import { and, asc, count, desc, eq, ilike, inArray, or, sql } from "drizzle-orm"
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  gte,
+  ilike,
+  inArray,
+  isNull,
+  or,
+  sql,
+} from "drizzle-orm"
 
 import type { Exec } from "@/lib/db"
 import * as t from "@/lib/db/schema"
 import { isUuid } from "@/lib/ids"
+import { now, toDay } from "@/lib/time"
 
 /**
  * Read model for the property manager's directory: every record the centrix mock holds
@@ -238,6 +251,7 @@ export async function listAllRuns(db: Exec, { page = 1 }: { page?: number }) {
       partyId: t.parties.id,
       party: t.parties.name,
       partner: t.partners.name,
+      category: t.partners.category,
     })
     .from(t.workflowRuns)
     .innerJoin(t.events, eq(t.workflowRuns.eventId, t.events.id))
@@ -266,4 +280,70 @@ export async function findUnitsByTenant(db: Exec, q: string) {
       )
     )
   return rows.map((r) => r.unitId)
+}
+
+const OPEN_RUN_STATES = [
+  "detected",
+  "offer_sent",
+  "consent_given",
+  "ordered",
+  "confirmed",
+]
+
+/**
+ * Every unit for the directory's unit list, with what a property manager scans for: the
+ * current (or upcoming) primary tenant, size and how many partner workflows are still open.
+ */
+export async function listDirectoryUnits(db: Exec) {
+  const today = toDay(now())
+  const [units, tenants, openRuns] = await Promise.all([
+    db
+      .select({
+        id: t.units.id,
+        identifier: t.units.identifier,
+        propertyId: t.units.propertyId,
+        street: t.properties.street,
+        address: t.properties.address,
+        city: t.properties.city,
+        sizeSqm: t.units.sizeSqm,
+        rooms: t.units.rooms,
+      })
+      .from(t.units)
+      .innerJoin(t.properties, eq(t.units.propertyId, t.properties.id))
+      .orderBy(asc(t.properties.address), asc(t.units.identifier)),
+    db
+      .select({ unitId: t.leases.unitId, name: t.parties.name })
+      .from(t.leases)
+      .innerJoin(t.leaseParties, eq(t.leaseParties.leaseId, t.leases.id))
+      .innerJoin(t.parties, eq(t.leaseParties.partyId, t.parties.id))
+      .where(
+        and(
+          eq(t.leaseParties.role, "tenant"),
+          or(isNull(t.leases.endDate), gte(t.leases.endDate, today))
+        )
+      )
+      .orderBy(desc(t.leases.startDate)),
+    db
+      .select({ unitId: t.events.unitId, n: count() })
+      .from(t.workflowRuns)
+      .innerJoin(t.events, eq(t.workflowRuns.eventId, t.events.id))
+      .where(inArray(t.workflowRuns.state, OPEN_RUN_STATES))
+      .groupBy(t.events.unitId),
+  ])
+  // Same rule as the unit snapshot: the most recent lease that hasn't ended.
+  const tenantOf = new Map<string, string>()
+  for (const r of tenants)
+    if (!tenantOf.has(r.unitId)) tenantOf.set(r.unitId, r.name)
+  const openOf = new Map(openRuns.map((r) => [r.unitId, r.n]))
+  return units.map((u) => ({
+    id: u.id,
+    identifier: u.identifier,
+    property_id: u.propertyId,
+    street: u.street ?? u.address,
+    city: u.city,
+    size_sqm: u.sizeSqm,
+    rooms: u.rooms,
+    tenant: tenantOf.get(u.id) ?? null,
+    open_workflows: openOf.get(u.id) ?? 0,
+  }))
 }

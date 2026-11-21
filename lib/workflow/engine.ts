@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, type SQL } from "drizzle-orm"
+import { and, asc, eq, inArray, sql, type SQL } from "drizzle-orm"
 
 import type { DB, Exec, Tx } from "@/lib/db"
 import * as t from "@/lib/db/schema"
@@ -37,6 +37,8 @@ export const COSTS = {
   manualBaselineContacts: 12,
   manualMinutesPerContact: 4,
   managerHourlyCents: 3500,
+  /** Meta's per-message price for a marketing template to a German number (~€0.11). */
+  whatsappTemplateCents: Number(process.env.WHATSAPP_COST_CENTS ?? 11),
 }
 
 // ------------------------------------------------------------------ helpers
@@ -382,6 +384,44 @@ export async function detectMoveIn(db: DB, unitId: string) {
 
 // ------------------------------------------------------------------ 2+3. reach the resident
 
+const CONTACT_LINE: Partial<Record<Channel, string>> = {
+  voice: 'Tap "Agree & order" or just say yes on the phone.',
+  whatsapp: 'Open the link in WhatsApp and tap "Agree & order".',
+}
+
+async function markOfferSentTx(
+  tx: Tx,
+  runId: string,
+  opts: {
+    channel: Channel
+    actor: Actor
+    costCents?: number
+    externalThreadId?: string
+  }
+) {
+  const run = await loadRun(tx, runId, { lock: true })
+  const offer = offerOf(run)
+  await transition(tx, runId, "offer_sent", {
+    actor: opts.actor,
+    details: { channel: opts.channel },
+    costCents: opts.costCents,
+  })
+  if (opts.externalThreadId) {
+    await tx
+      .update(t.conversations)
+      .set({ externalThreadId: opts.externalThreadId })
+      .where(eq(t.conversations.workflowRunId, runId))
+  }
+  const fields = offer.required_context.map((f) => FIELD_LABELS[f]).join(", ")
+  await addMessage(
+    tx,
+    runId,
+    "agent",
+    `Hi! Your move-in is coming up. ${offerSentence(offer)} To order it, ${offer.partner_name} needs ${fields}. ${CONTACT_LINE[opts.channel] ?? 'Tap "Agree & order" when you\'re ready.'}`
+  )
+  return offer
+}
+
 export async function markOfferSent(
   db: DB,
   runId: string,
@@ -392,28 +432,74 @@ export async function markOfferSent(
     externalThreadId?: string
   }
 ) {
+  return db.transaction((tx) => markOfferSentTx(tx, runId, opts))
+}
+
+/**
+ * Claims a WhatsApp message for this run before it is sent. From "detected" it is the
+ * first contact (the run moves to offer_sent); from "offer_sent" it is a single reminder
+ * after another channel. The run lock makes two clicks send one message, never two.
+ */
+export async function claimWhatsAppMessage(
+  db: DB,
+  runId: string,
+  opts: { costCents: number; mode: "live" | "simulated" }
+) {
   return db.transaction(async (tx) => {
     const run = await loadRun(tx, runId, { lock: true })
-    const offer = offerOf(run)
-    await transition(tx, runId, "offer_sent", {
-      actor: opts.actor,
-      details: { channel: opts.channel },
-      costCents: opts.costCents,
-    })
-    if (opts.externalThreadId) {
-      await tx
-        .update(t.conversations)
-        .set({ externalThreadId: opts.externalThreadId })
-        .where(eq(t.conversations.workflowRunId, runId))
+    const previous = await tx
+      .select({ id: t.auditEvents.id })
+      .from(t.auditEvents)
+      .where(
+        and(
+          eq(t.auditEvents.workflowRunId, runId),
+          eq(t.auditEvents.type, "whatsapp.sent")
+        )
+      )
+      .limit(1)
+    if (previous.length > 0)
+      throw conflict("a WhatsApp message already went out for this workflow")
+    let reminder = false
+    if (run.state === "detected") {
+      await markOfferSentTx(tx, runId, { channel: "whatsapp", actor: "ai" })
+    } else if (run.state === "offer_sent") {
+      reminder = true
+      await addMessage(
+        tx,
+        runId,
+        "agent",
+        `Quick reminder: ${offerSentence(offerOf(run))} Open the link in WhatsApp and tap "Agree & order".`
+      )
+    } else {
+      throw conflict(
+        `WhatsApp can only go out before the tenant answers (now "${run.state}")`,
+        { state: run.state }
+      )
     }
-    const fields = offer.required_context.map((f) => FIELD_LABELS[f]).join(", ")
-    await addMessage(
+    await audit(
       tx,
       runId,
-      "agent",
-      `Hi! Your move-in is coming up. ${offerSentence(offer)} To order it, ${offer.partner_name} needs ${fields}. Tap "Agree & order" or just say yes on the phone.`
+      "whatsapp.sent",
+      "ai",
+      { mode: opts.mode, reminder },
+      { costCents: opts.costCents }
     )
+    return { reminder, offer: offerOf(run) }
   })
+}
+
+export async function recordWhatsAppFailure(
+  db: DB,
+  runId: string,
+  reason: string
+) {
+  await audit(db, runId, "error", "system", { action: "whatsapp.send", reason })
+  await addMessage(
+    db,
+    runId,
+    "system",
+    "We couldn't reach you on WhatsApp – the offer is right here instead."
+  )
 }
 
 export async function setConversationThread(
@@ -920,7 +1006,11 @@ export async function getRunView(db: DB, runId: string) {
         .where(eq(t.serviceOrders.workflowRunId, runId)),
       db.select().from(t.consents).where(eq(t.consents.workflowRunId, runId)),
       db
-        .select({ id: t.parties.id, name: t.parties.name })
+        .select({
+          id: t.parties.id,
+          name: t.parties.name,
+          whatsappOptIn: t.parties.whatsappOptIn,
+        })
         .from(t.parties)
         .where(eq(t.parties.id, run.partyId)),
       run.partnerId
@@ -968,6 +1058,46 @@ export async function getRunView(db: DB, runId: string) {
         (baselineMinutes / 60) * COSTS.managerHourlyCents
       ),
     },
+  }
+}
+
+/**
+ * Cost per case across every partner workflow: what the AI and telephony steps cost
+ * against the manual baseline (contacts × minutes at the property manager's hourly rate).
+ */
+export async function getCaseCostSummary(db: DB) {
+  const [[runs], [costs], [messages]] = await Promise.all([
+    db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(t.workflowRuns)
+      .where(sql`${t.workflowRuns.state} <> 'no_eligible_offer'`),
+    db
+      .select({
+        eur: sql<string>`coalesce(sum(${t.auditEvents.costEur}), 0)::text`,
+        manual: sql<number>`count(*) filter (where ${t.auditEvents.actor} = 'property_manager')::int`,
+      })
+      .from(t.auditEvents),
+    db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(t.messages)
+      .where(inArray(t.messages.role, ["agent", "system"])),
+  ])
+  const cases = runs?.n ?? 0
+  const aiCostCents = eurToCents(costs?.eur ?? "0")
+  const baselineMinutes =
+    COSTS.manualBaselineContacts * COSTS.manualMinutesPerContact
+  const baselineCents = Math.round(
+    (baselineMinutes / 60) * COSTS.managerHourlyCents
+  )
+  return {
+    cases,
+    ai_cost_cents: aiCostCents,
+    ai_cost_per_case_cents: cases ? Math.round(aiCostCents / cases) : 0,
+    manual_touches: costs?.manual ?? 0,
+    automated_messages: messages?.n ?? 0,
+    baseline_minutes: baselineMinutes,
+    baseline_cents: baselineCents,
+    saved_cents: Math.max(0, cases * baselineCents - aiCostCents),
   }
 }
 

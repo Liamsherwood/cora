@@ -1,0 +1,90 @@
+/*
+ * Cora's live task. Rare, watched once per request: state indication only.
+ * Everything enters with opacity + a short rise on the strong ease-out the
+ * workspace already uses (--ease-press); nothing moves that the user is reading.
+ */
+
+.reveal {
+  transition:
+    opacity 240ms var(--ease-press),
+    transform 240ms var(--ease-press);
+
+  @starting-style {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+/* Chat bubbles grow from the side they are sent from. */
+.bubble {
+  transition:
+    opacity 260ms var(--ease-press),
+    transform 260ms var(--ease-press);
+  transform-origin: bottom right;
+
+  @starting-style {
+    opacity: 0;
+    transform: translateY(6px) scale(0.97);
+  }
+}
+
+.incoming {
+  transform-origin: bottom left;
+}
+
+/* A finished step's check settles in place. */
+.settle {
+  transition:
+    opacity 200ms var(--ease-press),
+    transform 200ms var(--ease-press);
+
+  @starting-style {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+}
+
+.label {
+  transition: color 200ms ease;
+}
+
+.rail {
+  transition: background-color 300ms ease;
+}
+
+/* Constant motion: linear. A quick turn reads as busy, not stuck. */
+.spinner {
+  animation: spin 700ms linear infinite;
+}
+
+.live {
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Keep the fades that explain a change; drop movement and spin. */
+  .reveal,
+  .bubble,
+  .settle {
+    @starting-style {
+      transform: none;
+    }
+  }
+
+  .spinner,
+  .live {
+    animation: none;
+  }
+}

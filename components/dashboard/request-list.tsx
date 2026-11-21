@@ -9,6 +9,7 @@ import { HugeiconsIcon } from "@hugeicons/react"
 
 import { cn } from "@/lib/utils"
 
+import { CoraChip, useWithCora } from "./cora-dispatch"
 import type { Request } from "./data"
 import { useDashboardLocale } from "./locale"
 import { useProperties } from "./portfolio"
@@ -31,6 +32,14 @@ export function RequestBadge({ request }: { request: Request }) {
     >
       {messages.status[request.status]}
     </span>
+  )
+}
+
+function RequestStatus({ request }: { request: Request }) {
+  return useWithCora(request) ? (
+    <CoraChip />
+  ) : (
+    <RequestBadge request={request} />
   )
 }
 
@@ -100,7 +109,7 @@ export function RequestList({
                 </span>
               </span>
               <span className="col-start-2 row-start-2 flex flex-wrap items-center gap-1.5 @xs:col-start-3 @xs:row-start-1 @xs:max-w-32 @xs:justify-end @xs:text-right">
-                <RequestBadge request={request} />
+                <RequestStatus request={request} />
                 {urgent && (
                   <span className="rounded-(--radius-badge) bg-destructive-surface px-2 py-1 text-xs font-medium text-destructive">
                     {messages.priority.Urgent}

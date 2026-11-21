@@ -13,6 +13,7 @@ import { z } from "zod"
 
 import { coraPersonality } from "@/lib/cora"
 import { getDb } from "@/lib/db"
+import { handleContractorReply } from "@/lib/dispatch/engine"
 import { ticketRef } from "@/lib/ids"
 import { finishTicketIntake, startTicketIntake } from "@/lib/tickets/activity"
 import {
@@ -142,6 +143,25 @@ function createBot() {
 
     const text = textParts.join("\n")
     if (!text) return
+
+    // A contractor answering Cora's job request, not a resident.
+    if (senderPhone) {
+      const answer = await handleContractorReply(
+        getDb(),
+        senderPhone,
+        text
+      ).catch((error) => {
+        console.error(
+          "WhatsApp dispatch reply failed",
+          error instanceof Error ? error.name : ""
+        )
+        return null
+      })
+      if (answer) {
+        await postReply(thread, answer, "assistant")
+        return
+      }
+    }
 
     const conversationKey = `cora:whatsapp:conversation:${thread.id}`
     const conversation =

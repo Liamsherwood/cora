@@ -2,12 +2,13 @@
 
 import {
   Add01Icon,
+  AiMagicIcon,
   ArrowLeft01Icon,
   CheckmarkCircle02Icon,
   RefreshIcon,
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { useEffect, useLayoutEffect, useRef, useState } from "react"
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -18,6 +19,12 @@ import {
 } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 
+import {
+  CoraDispatchProvider,
+  CoraTask,
+  useDispatchDriver,
+  withDispatchStatus,
+} from "./cora-dispatch"
 import {
   activeRequests,
   urgentRequests,
@@ -69,7 +76,13 @@ export function Dashboard({
   const [vacanciesOnly, setVacanciesOnly] = useState(false)
   const [requestFilter, setRequestFilter] = useState<RequestFilter>("active")
   const [announcement, setAnnouncement] = useState("")
-  const requests = useRequests()
+  const cora = useDispatchDriver()
+  const storedRequests = useRequests()
+  // Cora's bookings show as scheduled; the store keeps what people changed by hand.
+  const requests = useMemo(
+    () => withDispatchStatus(storedRequests, cora.byRequest),
+    [storedRequests, cora.byRequest]
+  )
   const properties = useProperties()
   const active = activeRequests(requests)
   const requestGroups = {
@@ -104,6 +117,10 @@ export function Dashboard({
       : undefined
   const requestProperty =
     overlay?.type === "request" ? overlay.property : undefined
+  const dispatch = selectedRequest
+    ? cora.byRequest.get(selectedRequest.id)
+    : undefined
+  const canHandOff = selectedRequest?.status === "Open" && !dispatch
 
   useEffect(() => {
     function searchShortcut(event: KeyboardEvent) {
@@ -224,229 +241,261 @@ export function Dashboard({
   const showNewRequest = view === "overview" || view === "maintenance"
 
   return (
-    <WorkspaceShell
-      current={view}
-      onView={changeView}
-      onSearch={() => openOverlay({ type: "search" })}
-      title={heading.title}
-      headingRef={pageHeading}
-      description={"description" in heading ? heading.description : undefined}
-      actions={
-        showNewRequest ? (
-          <Button size="lg" onClick={() => openOverlay({ type: "new" })}>
-            <HugeiconsIcon icon={Add01Icon} /> {messages.newRequest}
-          </Button>
-        ) : undefined
-      }
-    >
-      {view === "overview" && (
-        <Overview
-          month={month}
-          onMonth={setMonth}
-          rentHistory={rentHistory}
-          requests={requests}
-          coraActivity={coraActivity}
-          onProperty={openProperty}
-          onProperties={openProperties}
-          onRent={() => changeView("rent", true)}
-          onUrgent={() => openRequestQueue("urgent")}
-        />
-      )}
-      {view === "properties" && (
-        <PropertyList
-          requests={requests}
-          onProperty={openProperty}
-          vacanciesOnly={vacanciesOnly}
-          onVacanciesOnlyChange={setVacanciesOnly}
-        />
-      )}
-      {view === "maintenance" && (
-        <section className="rounded-(--radius-card) border border-border bg-card px-5 py-4 shadow-panel sm:px-6">
-          <div
-            className="mb-2 flex flex-wrap gap-1.5 border-b border-border pb-4"
-            role="group"
-            aria-label={messages.filterRequests}
-          >
-            {requestFilters.map((filter) => (
-              <Button
-                key={filter}
-                variant={requestFilter === filter ? "secondary" : "ghost"}
-                className="rounded-(--radius-chip)"
-                aria-pressed={requestFilter === filter}
-                onClick={() => setRequestFilter(filter)}
-              >
-                <span className="flex items-baseline gap-1.5">
-                  {requestGroups[filter].label}
-                  <span className="text-xs font-normal tabular-nums text-muted-foreground">
-                    {format.number(requestGroups[filter].requests.length)}
-                  </span>
-                </span>
-              </Button>
-            ))}
-          </div>
-          <RequestList
-            requests={requestGroups[requestFilter].requests}
-            onRequest={openRequest}
-            emptyMessage={
-              requestFilter === "urgent" ? messages.noUrgentRequests : undefined
-            }
+    <CoraDispatchProvider value={cora}>
+      <WorkspaceShell
+        current={view}
+        onView={changeView}
+        onSearch={() => openOverlay({ type: "search" })}
+        title={heading.title}
+        headingRef={pageHeading}
+        description={"description" in heading ? heading.description : undefined}
+        actions={
+          showNewRequest ? (
+            <Button size="lg" onClick={() => openOverlay({ type: "new" })}>
+              <HugeiconsIcon icon={Add01Icon} /> {messages.newRequest}
+            </Button>
+          ) : undefined
+        }
+      >
+        {view === "overview" && (
+          <Overview
+            month={month}
+            onMonth={setMonth}
+            rentHistory={rentHistory}
+            requests={requests}
+            coraActivity={coraActivity}
+            onProperty={openProperty}
+            onProperties={openProperties}
+            onRent={() => changeView("rent", true)}
+            onUrgent={() => openRequestQueue("urgent")}
           />
-        </section>
-      )}
-      {view === "rent" && (
-        <div className="space-y-5">
-          <div className="space-y-3">
-            <div className="flex sm:justify-end">
-              <MonthPicker
-                month={month}
-                rentHistory={rentHistory}
-                onMonth={setMonth}
-              />
-            </div>
-            <dl className="grid gap-3 min-[400px]:grid-cols-2 sm:grid-cols-3 sm:gap-4">
-              {rentTotals.map(({ label, amount }) => (
-                <div
-                  key={label}
-                  className="rounded-(--radius-card) border border-border bg-card p-4 shadow-panel min-[400px]:first:col-span-2 sm:first:col-span-1 lg:p-5"
+        )}
+        {view === "properties" && (
+          <PropertyList
+            requests={requests}
+            onProperty={openProperty}
+            vacanciesOnly={vacanciesOnly}
+            onVacanciesOnlyChange={setVacanciesOnly}
+          />
+        )}
+        {view === "maintenance" && (
+          <section className="rounded-(--radius-card) border border-border bg-card px-5 py-4 shadow-panel sm:px-6">
+            <div
+              className="mb-2 flex flex-wrap gap-1.5 border-b border-border pb-4"
+              role="group"
+              aria-label={messages.filterRequests}
+            >
+              {requestFilters.map((filter) => (
+                <Button
+                  key={filter}
+                  variant={requestFilter === filter ? "secondary" : "ghost"}
+                  className="rounded-(--radius-chip)"
+                  aria-pressed={requestFilter === filter}
+                  onClick={() => setRequestFilter(filter)}
                 >
-                  <dt className="text-sm text-muted-foreground">{label}</dt>
-                  <dd className="mt-2 text-2xl font-medium tabular-nums">
-                    {format.currency(amount)}
-                  </dd>
-                </div>
+                  <span className="flex items-baseline gap-1.5">
+                    {requestGroups[filter].label}
+                    <span className="text-xs font-normal tabular-nums text-muted-foreground">
+                      {format.number(requestGroups[filter].requests.length)}
+                    </span>
+                  </span>
+                </Button>
               ))}
-            </dl>
-          </div>
-          <RentChart month={month} rentHistory={rentHistory} />
-        </div>
-      )}
-      <p role="status" className="sr-only">
-        {announcement}
-      </p>
-
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent
-          closeLabel={messages.closeDialog}
-          ref={dialogPopup}
-          initialFocus={() =>
-            dialogPopup.current?.querySelector<HTMLElement>(
-              "[data-initial-focus]"
-            ) ?? dialogPopup.current
-          }
-        >
-          {overlay?.type === "new" && (
-            <NewRequestDialog onCreate={createRequest} />
-          )}
-          {overlay?.type === "search" && (
-            <SearchDialog
-              requests={requests}
-              onProperty={openProperty}
+            </div>
+            <RequestList
+              requests={requestGroups[requestFilter].requests}
               onRequest={openRequest}
+              emptyMessage={
+                requestFilter === "urgent"
+                  ? messages.noUrgentRequests
+                  : undefined
+              }
             />
-          )}
-          {overlay?.type === "property" && (
-            <>
-              <DialogTitle
-                tabIndex={-1}
-                data-initial-focus
-                className="pr-8 text-xl font-medium tracking-tight focus:outline-none"
-              >
-                {overlay.property.name}
-              </DialogTitle>
-              <DialogDescription className="mt-1.5 text-sm text-muted-foreground">
-                {overlay.property.address}
-              </DialogDescription>
-              <PropertySummary property={overlay.property} />
-              <h3 className="mt-5 text-sm font-medium">
-                {messages.activeRequests}
-              </h3>
-              <div className="max-h-[38svh] overflow-y-auto p-0.5">
-                <RequestList
-                  requests={active.filter(
-                    ({ propertyId }) => propertyId === overlay.property.id
-                  )}
-                  onRequest={(request) =>
-                    openOverlay({
-                      type: "request",
-                      request,
-                      property: overlay.property,
-                    })
-                  }
+          </section>
+        )}
+        {view === "rent" && (
+          <div className="space-y-5">
+            <div className="space-y-3">
+              <div className="flex sm:justify-end">
+                <MonthPicker
+                  month={month}
+                  rentHistory={rentHistory}
+                  onMonth={setMonth}
                 />
               </div>
-            </>
-          )}
-          {overlay?.type === "request" && selectedRequest && (
-            <>
-              <DialogTitle
-                tabIndex={-1}
-                data-initial-focus
-                className="pr-8 text-xl font-medium tracking-tight wrap-break-word focus:outline-none"
-              >
-                {selectedRequest.title}
-              </DialogTitle>
-              <DialogDescription className="mt-1.5 text-sm text-muted-foreground">
-                {
-                  properties.find(({ id }) => id === selectedRequest.propertyId)
-                    ?.name
-                }
-              </DialogDescription>
-              <div className="mt-4 flex items-center gap-2">
-                <RequestBadge request={selectedRequest} />
-                <span
-                  className={cn(
-                    "text-xs text-muted-foreground",
-                    selectedRequest.priority === "Urgent" &&
-                      selectedRequest.status !== "Resolved" &&
-                      "font-medium text-destructive"
-                  )}
+              <dl className="grid gap-3 min-[400px]:grid-cols-2 sm:grid-cols-3 sm:gap-4">
+                {rentTotals.map(({ label, amount }) => (
+                  <div
+                    key={label}
+                    className="rounded-(--radius-card) border border-border bg-card p-4 shadow-panel min-[400px]:first:col-span-2 sm:first:col-span-1 lg:p-5"
+                  >
+                    <dt className="text-sm text-muted-foreground">{label}</dt>
+                    <dd className="mt-2 text-2xl font-medium tabular-nums">
+                      {format.currency(amount)}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+            <RentChart month={month} rentHistory={rentHistory} />
+          </div>
+        )}
+        <p role="status" className="sr-only">
+          {announcement}
+        </p>
+
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogContent
+            closeLabel={messages.closeDialog}
+            ref={dialogPopup}
+            // Cora's task grows as she works: anchor it at the top so it grows downward
+            // instead of re-centring on every step.
+            className={
+              overlay?.type === "request" && dispatch
+                ? "self-start sm:mt-[10svh]"
+                : undefined
+            }
+            initialFocus={() =>
+              dialogPopup.current?.querySelector<HTMLElement>(
+                "[data-initial-focus]"
+              ) ?? dialogPopup.current
+            }
+          >
+            {overlay?.type === "new" && (
+              <NewRequestDialog onCreate={createRequest} />
+            )}
+            {overlay?.type === "search" && (
+              <SearchDialog
+                requests={requests}
+                onProperty={openProperty}
+                onRequest={openRequest}
+              />
+            )}
+            {overlay?.type === "property" && (
+              <>
+                <DialogTitle
+                  tabIndex={-1}
+                  data-initial-focus
+                  className="pr-8 text-xl font-medium tracking-tight focus:outline-none"
                 >
-                  {formatMessage(messages.requestPriority, {
-                    priority: messages.priority[selectedRequest.priority],
-                  })}
-                </span>
-              </div>
-              {selectedRequest.description && (
-                <p className="mt-4 text-sm leading-6 wrap-break-word whitespace-pre-wrap">
-                  {selectedRequest.description}
-                </p>
-              )}
-              <div className="mt-6 flex flex-wrap items-center justify-end gap-2">
-                {requestProperty && (
-                  <Button
-                    variant="ghost"
-                    className="mr-auto -ml-2.5 px-2.5 text-muted-foreground"
-                    onClick={() =>
-                      returnToProperty(requestProperty, selectedRequest)
+                  {overlay.property.name}
+                </DialogTitle>
+                <DialogDescription className="mt-1.5 text-sm text-muted-foreground">
+                  {overlay.property.address}
+                </DialogDescription>
+                <PropertySummary property={overlay.property} />
+                <h3 className="mt-5 text-sm font-medium">
+                  {messages.activeRequests}
+                </h3>
+                <div className="max-h-[38svh] overflow-y-auto p-0.5">
+                  <RequestList
+                    requests={active.filter(
+                      ({ propertyId }) => propertyId === overlay.property.id
+                    )}
+                    onRequest={(request) =>
+                      openOverlay({
+                        type: "request",
+                        request,
+                        property: overlay.property,
+                      })
                     }
+                  />
+                </div>
+              </>
+            )}
+            {overlay?.type === "request" && selectedRequest && (
+              <>
+                <DialogTitle
+                  tabIndex={-1}
+                  data-initial-focus
+                  className="pr-8 text-xl font-medium tracking-tight wrap-break-word focus:outline-none"
+                >
+                  {selectedRequest.title}
+                </DialogTitle>
+                <DialogDescription className="mt-1.5 text-sm text-muted-foreground">
+                  {
+                    properties.find(
+                      ({ id }) => id === selectedRequest.propertyId
+                    )?.name
+                  }
+                </DialogDescription>
+                <div className="mt-4 flex items-center gap-2">
+                  <RequestBadge request={selectedRequest} />
+                  <span
+                    className={cn(
+                      "text-xs text-muted-foreground",
+                      selectedRequest.priority === "Urgent" &&
+                        selectedRequest.status !== "Resolved" &&
+                        "font-medium text-destructive"
+                    )}
                   >
-                    <HugeiconsIcon icon={ArrowLeft01Icon} />
-                    {messages.backToProperty}
-                  </Button>
+                    {formatMessage(messages.requestPriority, {
+                      priority: messages.priority[selectedRequest.priority],
+                    })}
+                  </span>
+                </div>
+                {selectedRequest.description && (
+                  <p className="mt-4 text-sm leading-6 wrap-break-word whitespace-pre-wrap">
+                    {selectedRequest.description}
+                  </p>
                 )}
-                {selectedRequest.status === "Resolved" ? (
-                  <Button
-                    variant="outline"
-                    onClick={() => changeRequestStatus(selectedRequest, "Open")}
-                  >
-                    <HugeiconsIcon icon={RefreshIcon} />{" "}
-                    {messages.reopenRequest}
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={() =>
-                      changeRequestStatus(selectedRequest, "Resolved")
-                    }
-                  >
-                    <HugeiconsIcon icon={CheckmarkCircle02Icon} />{" "}
-                    {messages.markResolved}
-                  </Button>
+                {dispatch && <CoraTask dispatch={dispatch} />}
+                {cora.error && (
+                  <p role="alert" className="mt-4 text-sm text-destructive">
+                    {cora.error}
+                  </p>
                 )}
-              </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
-    </WorkspaceShell>
+                <div className="mt-6 flex flex-wrap items-center justify-end gap-2">
+                  {requestProperty && (
+                    <Button
+                      variant="ghost"
+                      className="mr-auto -ml-2.5 px-2.5 text-muted-foreground"
+                      onClick={() =>
+                        returnToProperty(requestProperty, selectedRequest)
+                      }
+                    >
+                      <HugeiconsIcon icon={ArrowLeft01Icon} />
+                      {messages.backToProperty}
+                    </Button>
+                  )}
+                  {selectedRequest.status === "Resolved" ? (
+                    <Button
+                      variant="outline"
+                      onClick={() =>
+                        changeRequestStatus(selectedRequest, "Open")
+                      }
+                    >
+                      <HugeiconsIcon icon={RefreshIcon} />{" "}
+                      {messages.reopenRequest}
+                    </Button>
+                  ) : (
+                    <>
+                      <Button
+                        variant={canHandOff ? "outline" : "default"}
+                        onClick={() =>
+                          changeRequestStatus(selectedRequest, "Resolved")
+                        }
+                      >
+                        <HugeiconsIcon icon={CheckmarkCircle02Icon} />{" "}
+                        {messages.markResolved}
+                      </Button>
+                      {canHandOff && (
+                        <Button
+                          disabled={cora.starting === selectedRequest.id}
+                          onClick={() => cora.start(selectedRequest)}
+                        >
+                          <HugeiconsIcon icon={AiMagicIcon} />{" "}
+                          {messages.cora.handOff}
+                        </Button>
+                      )}
+                    </>
+                  )}
+                </div>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
+      </WorkspaceShell>
+    </CoraDispatchProvider>
   )
 }
