@@ -10,25 +10,31 @@ import type { TicketDetails } from "./details"
  * manager's service levels, not a legal deadline.
  */
 
-export type Trade =
-  | "heatingEngineer"
-  | "plumber"
-  | "electrician"
-  | "internetProvider"
-  | "dampSpecialist"
-  | "pestControl"
-  | "applianceService"
-  | "liftService"
-  | "locksmith"
-  | "caretaker"
+export const trades = [
+  "heatingEngineer",
+  "plumber",
+  "electrician",
+  "dampSpecialist",
+  "pestControl",
+  "applianceService",
+  "liftService",
+  "locksmith",
+  "caretaker",
+] as const
 
-/** Who fixes each category. Noise is a matter between neighbours: nobody to commission. */
+export type Trade = (typeof trades)[number]
+
+/**
+ * Who fixes each category. Internet faults the property manager owns are the building's
+ * wiring, so an electrician (the tenant's own line is their provider's job). Noise is a
+ * matter between neighbours: nobody to commission.
+ */
 export const tradeFor: Record<TicketClassification["category"], Trade | null> =
   {
     heating: "heatingEngineer",
     plumbing: "plumber",
     electrical: "electrician",
-    internet: "internetProvider",
+    internet: "electrician",
     damp_mould: "dampSpecialist",
     pests: "pestControl",
     appliance: "applianceService",
@@ -54,7 +60,8 @@ export type NextStep =
   | { kind: "triage" }
   | { kind: "linkTenancy" }
   | { kind: "callResidentNow" }
-  | { kind: "commission"; trade: Trade }
+  /** `done` once a contractor has been booked on the case. */
+  | { kind: "commission"; trade: Trade; done: boolean }
   | { kind: "noiseNotice" }
   | { kind: "agreeAccess" }
   | { kind: "informResidents" }
@@ -74,6 +81,8 @@ type PlanInput = {
   caseId: string | null
   createdAt: Date
   resolvedAt: Date | null
+  /** A contractor is booked: the response target is met. */
+  commissioned?: boolean
 }
 
 /** "YYYY-MM-DD" of an instant in German local time. */
@@ -85,6 +94,7 @@ function berlinDay(at: Date): string {
 
 export function ticketPlan(ticket: PlanInput, at: Date): TicketPlan {
   const { classification, details, caseId, createdAt, resolvedAt } = ticket
+  const commissioned = Boolean(ticket.commissioned)
   if (resolvedAt) return { target: null, due: null, overdue: false, steps: [] }
 
   const steps: NextStep[] = []
@@ -97,7 +107,11 @@ export function ticketPlan(ticket: PlanInput, at: Date): TicketPlan {
   const trade = tradeFor[classification.category]
   if (classification.priority === "emergency")
     steps.push({ kind: "callResidentNow" })
-  steps.push(trade ? { kind: "commission", trade } : { kind: "noiseNotice" })
+  steps.push(
+    trade
+      ? { kind: "commission", trade, done: commissioned }
+      : { kind: "noiseNotice" }
+  )
   if (trade && classification.scope === "unit" && !details?.access)
     steps.push({ kind: "agreeAccess" })
   if (classification.scope === "common") steps.push({ kind: "informResidents" })
@@ -109,7 +123,7 @@ export function ticketPlan(ticket: PlanInput, at: Date): TicketPlan {
     return {
       target: rule.target,
       due: { at: due },
-      overdue: at > due,
+      overdue: !commissioned && at > due,
       steps,
     }
   }
@@ -118,7 +132,7 @@ export function ticketPlan(ticket: PlanInput, at: Date): TicketPlan {
   return {
     target: rule.target,
     due: { day },
-    overdue: berlinDay(at) > day,
+    overdue: !commissioned && berlinDay(at) > day,
     steps,
   }
 }

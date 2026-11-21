@@ -25,3 +25,11 @@
 
 ## Side tasks of a move-in not built (but modelled)
 - Wohnungsgeberbestätigung for residence registration, meter reading to the metering company: same event, would plug in as further connectors.
+
+## Maintenance tickets: contractor booking
+- **Real:** the matching and the booking. Candidates are the contractors whose profile (`contractor_profiles`) covers the ticket's trade; they are ranked by service area covering the building, 24/7 cover for emergencies, earlier jobs in the same building, distance and open workload (`lib/contractors/match.ts`, no model). Booking writes a work order, moves the case to `scheduled` and records a `work_order.scheduled` event; the voice agent reads the visit back through `get_cases`.
+- **Simulated:** the contractor's confirmation. Production would send the job by e-mail, portal or WhatsApp and wait for the contractor to accept or counter the slot.
+- Trades and service areas are master data centrix would hold per contractor. In the seed they follow each firm's job history and phone area code; four Aachen firms were added so the hand-made demo building has local options.
+- Distances are town centre to town centre. Production would geocode addresses.
+- Visit slots: emergencies within 90 minutes; otherwise 08:00, 10:00, 13:00 or 15:00 on working days (Saturdays too when urgent), clear of the contractor's booked jobs. Response targets: emergency 2 h, high 24 h, normal 3 working days, low 10 working days; booking a contractor meets the target.
+- Internet faults the property manager owns are the building's wiring, so they go to an electrician; the tenant's own line is their provider's job.

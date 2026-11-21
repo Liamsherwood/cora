@@ -8,6 +8,8 @@ import type { DB, Tx } from "@/lib/db"
 import * as t from "@/lib/db/schema"
 import type { PgColumn, PgTable } from "drizzle-orm/pg-core"
 import { loadManifestFiles, registerPartner } from "@/lib/connectors/registry"
+import { cities } from "@/lib/contractors/geo"
+import { trades } from "@/lib/tickets/playbook"
 
 /*
  * data/seed.json uses the snake_case column names, one array per table, with fixed
@@ -114,6 +116,18 @@ const SeedSchema = z.object({
         unit_id: id,
         type: z.enum(["electricity", "gas", "water", "heat"]),
         number: z.string(),
+      })
+    )
+    .default([]),
+  // What each contractor does and where: the input for matching a ticket to one.
+  contractor_profiles: z
+    .array(
+      z.object({
+        party_id: id,
+        trades: z.array(z.enum(trades)).min(1),
+        base_city: z.enum(cities),
+        service_radius_km: z.number().int().positive(),
+        emergency_service: z.boolean().default(false),
       })
     )
     .default([]),
@@ -320,6 +334,18 @@ async function upsertSeedRows(tx: Tx, data: SeedData) {
       phone: n(p.phone),
       whatsappOptIn: p.whatsapp_opt_in,
       language: p.language,
+    }))
+  )
+  await upsert(
+    tx,
+    t.contractorProfiles,
+    [t.contractorProfiles.partyId],
+    data.contractor_profiles.map((c) => ({
+      partyId: c.party_id,
+      trades: c.trades,
+      baseCity: c.base_city,
+      serviceRadiusKm: c.service_radius_km,
+      emergencyService: c.emergency_service,
     }))
   )
   await upsert(

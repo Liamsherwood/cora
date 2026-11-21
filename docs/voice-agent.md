@@ -81,6 +81,13 @@ assumption of typical service levels), and visits, building notices and tenancy
 linking are added when the ticket calls for them. The call recap is the
 `call.completed` event the post-call webhook stores for the run's conversation ID.
 
+From the ticket, staff can **find a contractor**: centrix ranks the contractors whose
+trade fits and whose service area covers the building, and books the first free visit
+as a work order. `get_cases` and the `open_cases` call context then carry the visit
+time and contractor, so Cora can tell the resident when someone is coming. Matching
+and booking are plain code; only the contractor's confirmation is simulated (see
+[assumptions](partner-connect/assumptions.md#maintenance-tickets-contractor-booking)).
+
 ## Dynamic variables
 
 Every call gets the same keys (`supportContext` in `lib/voice/caller.ts`); outbound

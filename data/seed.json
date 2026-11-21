@@ -4032,6 +4032,42 @@
       "language": "de"
     },
     {
+      "id": "40000000-0000-4000-8000-000000000302",
+      "type": "organization",
+      "name": "Sanitär & Heizung Classen",
+      "email": "auftrag@classen-shk.example",
+      "phone": "+49 241 0000302",
+      "whatsapp_opt_in": true,
+      "language": "de"
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000303",
+      "type": "organization",
+      "name": "Elektro Lennartz",
+      "email": "auftrag@elektro-lennartz.example",
+      "phone": "+49 241 0000303",
+      "whatsapp_opt_in": false,
+      "language": "de"
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000304",
+      "type": "organization",
+      "name": "Objektservice Kaiserstadt",
+      "email": "auftrag@objektservice-kaiserstadt.example",
+      "phone": "+49 241 0000304",
+      "whatsapp_opt_in": true,
+      "language": "de"
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000305",
+      "type": "organization",
+      "name": "Schlüsseldienst Aachen Mitte",
+      "email": "auftrag@schluessel-aachen.example",
+      "phone": "+49 241 0000305",
+      "whatsapp_opt_in": false,
+      "language": "de"
+    },
+    {
       "id": "7522356a-501c-5c09-ad52-0310e5502fa0",
       "type": "person",
       "name": "Jana Wilms",
@@ -33658,7 +33694,224 @@
       "number": "WMZ-23250475"
     }
   ],
+  "contractor_profiles": [
+    {
+      "party_id": "40000000-0000-4000-8000-000000000301",
+      "trades": [
+        "heatingEngineer",
+        "plumber"
+      ],
+      "base_city": "Aachen",
+      "service_radius_km": 30,
+      "emergency_service": true
+    },
+    {
+      "party_id": "40000000-0000-4000-8000-000000000302",
+      "trades": [
+        "plumber",
+        "heatingEngineer"
+      ],
+      "base_city": "Aachen",
+      "service_radius_km": 25,
+      "emergency_service": true
+    },
+    {
+      "party_id": "40000000-0000-4000-8000-000000000303",
+      "trades": [
+        "electrician"
+      ],
+      "base_city": "Aachen",
+      "service_radius_km": 25,
+      "emergency_service": false
+    },
+    {
+      "party_id": "40000000-0000-4000-8000-000000000304",
+      "trades": [
+        "caretaker"
+      ],
+      "base_city": "Aachen",
+      "service_radius_km": 20,
+      "emergency_service": false
+    },
+    {
+      "party_id": "40000000-0000-4000-8000-000000000305",
+      "trades": [
+        "locksmith"
+      ],
+      "base_city": "Aachen",
+      "service_radius_km": 25,
+      "emergency_service": true
+    },
+    {
+      "party_id": "4407f18c-a58f-57a0-8143-d5894092490d",
+      "trades": [
+        "plumber",
+        "heatingEngineer"
+      ],
+      "base_city": "Düsseldorf",
+      "service_radius_km": 30,
+      "emergency_service": false
+    },
+    {
+      "party_id": "d3000a5d-9472-5924-8c4b-66cdc34b591f",
+      "trades": [
+        "heatingEngineer",
+        "plumber"
+      ],
+      "base_city": "Köln",
+      "service_radius_km": 30,
+      "emergency_service": false
+    },
+    {
+      "party_id": "5ac2f612-56e2-56d7-9618-aac04522ee67",
+      "trades": [
+        "heatingEngineer",
+        "plumber"
+      ],
+      "base_city": "Duisburg",
+      "service_radius_km": 35,
+      "emergency_service": false
+    },
+    {
+      "party_id": "8e4d6bbc-200c-5a0e-b200-711306e4c6f8",
+      "trades": [
+        "plumber"
+      ],
+      "base_city": "Düsseldorf",
+      "service_radius_km": 50,
+      "emergency_service": true
+    },
+    {
+      "party_id": "a0e7dcc9-1fae-5ee2-8b11-d95679952bda",
+      "trades": [
+        "electrician"
+      ],
+      "base_city": "Neuss",
+      "service_radius_km": 30,
+      "emergency_service": false
+    },
+    {
+      "party_id": "809b45c2-49a7-5326-93dc-0dbfa23ad17d",
+      "trades": [
+        "electrician"
+      ],
+      "base_city": "Köln",
+      "service_radius_km": 30,
+      "emergency_service": false
+    },
+    {
+      "party_id": "7144e72a-845c-5bfe-ae21-ef0e9477d69b",
+      "trades": [
+        "electrician"
+      ],
+      "base_city": "Duisburg",
+      "service_radius_km": 35,
+      "emergency_service": false
+    },
+    {
+      "party_id": "bfbaf95f-e734-53c3-a7b2-acc9d41abf05",
+      "trades": [
+        "locksmith"
+      ],
+      "base_city": "Düsseldorf",
+      "service_radius_km": 40,
+      "emergency_service": true
+    },
+    {
+      "party_id": "3dbd6282-0744-585f-a343-0adb603c09eb",
+      "trades": [
+        "locksmith"
+      ],
+      "base_city": "Köln",
+      "service_radius_km": 30,
+      "emergency_service": true
+    },
+    {
+      "party_id": "b12db08d-cdaa-5367-b1da-6fc0f4587be9",
+      "trades": [
+        "liftService"
+      ],
+      "base_city": "Essen",
+      "service_radius_km": 150,
+      "emergency_service": true
+    },
+    {
+      "party_id": "4f319528-a427-5dc4-9000-0838a3434a51",
+      "trades": [
+        "pestControl",
+        "dampSpecialist"
+      ],
+      "base_city": "Krefeld",
+      "service_radius_km": 60,
+      "emergency_service": false
+    },
+    {
+      "party_id": "9f68bf7a-8287-5653-89d4-baaadf0a13df",
+      "trades": [
+        "dampSpecialist"
+      ],
+      "base_city": "Düsseldorf",
+      "service_radius_km": 60,
+      "emergency_service": false
+    },
+    {
+      "party_id": "34868694-48fd-5f65-ae07-4fed31b407d4",
+      "trades": [
+        "applianceService"
+      ],
+      "base_city": "Mönchengladbach",
+      "service_radius_km": 60,
+      "emergency_service": false
+    },
+    {
+      "party_id": "c31f0908-d0c1-5fe0-b6ff-5dd116cbdf72",
+      "trades": [
+        "caretaker"
+      ],
+      "base_city": "Düsseldorf",
+      "service_radius_km": 25,
+      "emergency_service": false
+    },
+    {
+      "party_id": "870b6e4d-ac37-5a94-b9f1-b0e0272d72c8",
+      "trades": [
+        "caretaker"
+      ],
+      "base_city": "Köln",
+      "service_radius_km": 25,
+      "emergency_service": false
+    },
+    {
+      "party_id": "e8594421-b20a-5f3a-986c-76c6cac194f9",
+      "trades": [
+        "caretaker"
+      ],
+      "base_city": "Essen",
+      "service_radius_km": 30,
+      "emergency_service": false
+    }
+  ],
   "cases": [
+    {
+      "id": "c0000000-0000-4000-8000-000000000012",
+      "property_id": "10000000-0000-4000-8000-000000000012",
+      "unit_id": null,
+      "reporter_party_id": null,
+      "asset_id": null,
+      "category": "heating",
+      "priority": "normal",
+      "status": "closed"
+    },
+    {
+      "id": "c0000000-0000-4000-8000-000000000013",
+      "property_id": "10000000-0000-4000-8000-000000000012",
+      "unit_id": "30000000-0000-4000-8000-00000000004b",
+      "reporter_party_id": null,
+      "asset_id": null,
+      "category": "plumbing",
+      "priority": "high",
+      "status": "closed"
+    },
     {
       "id": "80fbd76d-51cd-51e0-972b-331a0ec0f2c9",
       "property_id": "8d9eef5a-e224-5c37-b90c-3b8e760a94d3",
@@ -36651,6 +36904,24 @@
     }
   ],
   "work_orders": [
+    {
+      "id": "e0000000-0000-4000-8000-000000000012",
+      "case_id": "c0000000-0000-4000-8000-000000000012",
+      "contractor_id": "40000000-0000-4000-8000-000000000301",
+      "scheduled_at": "2025-10-14T07:00:00.000Z",
+      "cost_estimate_eur": "420.00",
+      "payer": "weg",
+      "status": "invoiced"
+    },
+    {
+      "id": "e0000000-0000-4000-8000-000000000013",
+      "case_id": "c0000000-0000-4000-8000-000000000013",
+      "contractor_id": "40000000-0000-4000-8000-000000000301",
+      "scheduled_at": "2026-03-03T09:00:00.000Z",
+      "cost_estimate_eur": "185.00",
+      "payer": "owner",
+      "status": "invoiced"
+    },
     {
       "id": "2c8345bc-255e-551f-8e37-0f0ea74d925e",
       "case_id": "80fbd76d-51cd-51e0-972b-331a0ec0f2c9",

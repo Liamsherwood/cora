@@ -6,9 +6,14 @@ import { DashboardLocaleProvider } from "@/components/dashboard/locale"
 import { WorkspaceShell } from "@/components/dashboard/workspace"
 import { AutoRefresh } from "@/components/partner-connect/auto-refresh"
 import { ActivityOrb } from "@/components/tickets/activity-orb"
+import {
+  ContractorPanel,
+  type BookedVisitView,
+} from "@/components/tickets/contractor-panel"
 import { CoraAvatar } from "@/components/tickets/cora-avatar"
 import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
+import { activeWorkOrder } from "@/lib/contractors/match"
 import { getDb } from "@/lib/db"
 import { caseRef, isUuid, ticketRef } from "@/lib/ids"
 import { getMessages, type Messages } from "@/lib/i18n/dictionaries"
@@ -22,7 +27,7 @@ import {
   listDemoTickets,
   resolvedDemoTickets,
 } from "@/lib/tickets/demo"
-import { ticketPlan, type TicketPlan } from "@/lib/tickets/playbook"
+import { ticketPlan, tradeFor, type TicketPlan } from "@/lib/tickets/playbook"
 import {
   getTicket,
   listTicketCalls,
@@ -31,7 +36,7 @@ import {
   ticketPageSize,
   type TicketCall,
 } from "@/lib/tickets/repository"
-import { now } from "@/lib/time"
+import { clock } from "@/lib/time"
 import { resolveTicketAction } from "./actions"
 import styles from "./run-details.module.css"
 
@@ -162,10 +167,12 @@ function ResidentDetails({
 function NextSteps({
   plan,
   labels,
+  doneLabel,
   formatDue,
 }: {
   plan: TicketPlan
   labels: Messages["tickets"]["plan"]
+  doneLabel: string
   formatDue: (due: NonNullable<TicketPlan["due"]>) => string
 }) {
   if (!plan.steps.length) return null
@@ -193,15 +200,27 @@ function NextSteps({
         ) : null}
       </div>
       <ol className="mt-3 list-decimal space-y-1.5 pl-5 text-sm marker:text-muted-foreground">
-        {plan.steps.map((step) => (
-          <li key={step.kind}>
-            {step.kind === "commission"
-              ? formatMessage(labels.steps.commission, {
+        {plan.steps.map((step) =>
+          step.kind === "commission" ? (
+            <li
+              key={step.kind}
+              className={step.done ? "text-muted-foreground" : undefined}
+            >
+              <span className={step.done ? "line-through" : undefined}>
+                {formatMessage(labels.steps.commission, {
                   trade: labels.trades[step.trade],
-                })
-              : labels.steps[step.kind]}
-          </li>
-        ))}
+                })}
+              </span>
+              {step.done ? (
+                <Badge className="ml-2 bg-success-surface text-success">
+                  {doneLabel}
+                </Badge>
+              ) : null}
+            </li>
+          ) : (
+            <li key={step.kind}>{labels.steps[step.kind]}</li>
+          )
+        )}
       </ol>
     </section>
   )
@@ -309,7 +328,17 @@ export default async function TicketsPage({
           ),
         ])
       : []
-  const plan = ticket ? ticketPlan(ticket, now()) : null
+  const workOrder =
+    db && ticket && !ticket.demo && ticket.caseId
+      ? await activeWorkOrder(db, ticket.caseId)
+      : null
+  // Tickets are stamped on the real clock, so their targets are measured on it too.
+  const plan = ticket
+    ? ticketPlan({ ...ticket, commissioned: Boolean(workOrder) }, clock())
+    : null
+  const trade = ticket?.classification
+    ? tradeFor[ticket.classification.category]
+    : null
   const { intlLocale } = localeSettings[locale]
   const date = new Intl.DateTimeFormat(intlLocale, {
     dateStyle: "medium",
@@ -330,6 +359,17 @@ export default async function TicketsPage({
     month: "short",
     timeZone: "UTC",
   })
+  const booked: BookedVisitView | null = workOrder
+    ? {
+        contractorName: workOrder.contractorName,
+        contractorPhone: workOrder.contractorPhone,
+        baseCity: workOrder.baseCity,
+        when: workOrder.scheduledAt
+          ? dueTime.format(workOrder.scheduledAt)
+          : null,
+        status: workOrder.status,
+      }
+    : null
   const formatDue = (due: NonNullable<TicketPlan["due"]>) =>
     "at" in due
       ? dueTime.format(due.at)
@@ -587,7 +627,21 @@ export default async function TicketsPage({
                   <NextSteps
                     plan={plan}
                     labels={messages.plan}
+                    doneLabel={messages.contractor.booked}
                     formatDue={formatDue}
+                  />
+                ) : null}
+                {!ticket.demo &&
+                ticket.caseId &&
+                trade &&
+                (booked || !ticket.resolvedAt) ? (
+                  <ContractorPanel
+                    ticketId={ticket.id}
+                    city={ticket.propertyCity ?? ticket.propertyAddress ?? ""}
+                    trade={messages.plan.trades[trade]}
+                    booked={booked}
+                    labels={messages.contractor}
+                    intlLocale={intlLocale}
                   />
                 ) : null}
                 <p className="mt-3 text-xs text-muted-foreground">

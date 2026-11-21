@@ -29,6 +29,7 @@ const examples: DemoTicket[] = [
     caseId: "90000400-0000-4000-8000-000000000005",
     tenantName: "Liam Sherwood",
     propertyAddress: "Musterstraße 12",
+    propertyCity: "Aachen",
     unitIdentifier: "4B",
     resolvedAt: null,
     runs: [
@@ -49,6 +50,7 @@ const examples: DemoTicket[] = [
     caseId: "90000000-0000-4000-8000-000000000001",
     tenantName: "Liam Sherwood",
     propertyAddress: "Musterstraße 12",
+    propertyCity: "Aachen",
     unitIdentifier: "4B",
     resolvedAt: null,
     runs: [
@@ -76,6 +78,7 @@ const examples: DemoTicket[] = [
     caseId: "90000100-0000-4000-8000-000000000002",
     tenantName: "Jonas Weber",
     propertyAddress: "Musterstraße 12",
+    propertyCity: "Aachen",
     unitIdentifier: "2A",
     resolvedAt: null,
     runs: [
@@ -96,6 +99,7 @@ const examples: DemoTicket[] = [
     caseId: null,
     tenantName: null,
     propertyAddress: null,
+    propertyCity: null,
     unitIdentifier: null,
     resolvedAt: null,
     runs: [
@@ -120,6 +124,7 @@ const examples: DemoTicket[] = [
     caseId: "90000300-0000-4000-8000-000000000004",
     tenantName: "Mina Keller",
     propertyAddress: "Beispielweg 8",
+    propertyCity: "Aachen",
     unitIdentifier: null,
     resolvedAt: new Date("2026-11-20T15:43:00Z"),
     runs: [

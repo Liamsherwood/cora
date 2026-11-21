@@ -3,7 +3,7 @@ import "server-only"
 import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm"
 
 import type { DB, Exec, Tx } from "@/lib/db"
-import { cases, events } from "@/lib/db/schema/operations"
+import { cases, events, workOrders } from "@/lib/db/schema/operations"
 import { parties, properties, units } from "@/lib/db/schema/portfolio"
 import {
   maintenanceTickets,
@@ -227,6 +227,7 @@ const ticketFields = {
   resolvedAt: maintenanceTickets.resolvedAt,
   tenantName: parties.name,
   propertyAddress: properties.address,
+  propertyCity: properties.city,
   unitIdentifier: units.identifier,
 }
 
@@ -396,6 +397,21 @@ export function resolveTicket(db: DB, id: string) {
         .update(cases)
         .set({ status: "resolved" })
         .where(eq(cases.id, ticket.caseId))
+      // The repair is done: free the contractor's slot.
+      await tx
+        .update(workOrders)
+        .set({ status: "completed" })
+        .where(
+          and(
+            eq(workOrders.caseId, ticket.caseId),
+            inArray(workOrders.status, [
+              "requested",
+              "accepted",
+              "scheduled",
+              "in_progress",
+            ])
+          )
+        )
     }
   })
 }

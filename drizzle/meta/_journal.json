@@ -71,6 +71,13 @@
       "when": 1795231635668,
       "tag": "0009_ticket_title_details",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1795234135767,
+      "tag": "0010_contractor_profiles",
+      "breakpoints": true
     }
   ]
 }

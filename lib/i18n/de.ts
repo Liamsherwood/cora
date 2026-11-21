@@ -413,7 +413,6 @@ export default {
         heatingEngineer: "Heizungsfachbetrieb",
         plumber: "Sanitärbetrieb",
         electrician: "Elektrofachbetrieb",
-        internetProvider: "Internetanbieter",
         dampSpecialist: "Fachbetrieb für Feuchteschäden",
         pestControl: "Schädlingsbekämpfung",
         applianceService: "Gerätekundendienst",
@@ -435,6 +434,56 @@ export default {
         confirmFixed:
           "Mit der Mietpartei bestätigen, dass es behoben ist, dann als erledigt markieren",
       },
+    },
+    contractor: {
+      title: "Handwerksbetrieb",
+      intro:
+        "Einen Betrieb ({trade}) finden, der {city} abdeckt, und den ersten freien Termin buchen.",
+      find: "Betrieb suchen",
+      stages: {
+        area: "Handwerkerverzeichnis rund um {city} durchsuchen",
+        areaDone:
+          "{inArea} von {searched} passenden Betrieben decken {city} ab",
+        history: "Prüfen, wer das Gebäude bereits kennt",
+        historyDone:
+          "Sortiert nach Einsatzgebiet, Erfahrung im Gebäude und Entfernung",
+        availability: "Verfügbarkeit prüfen",
+        availabilityEmergency: "24/7-Notdienst prüfen",
+        availabilityDone: "Erste Termine gefunden",
+        sending: "Auftrag an {name} senden",
+        sendingDone: "Auftrag an {name} gesendet",
+        confirming: "Warten auf Bestätigung von {name}",
+      },
+      bestMatch: "Beste Wahl",
+      reasons: {
+        covers: "Deckt {city} ab",
+        outside: "Außerhalb des Einsatzgebiets",
+        local: "Sitz in {city}",
+        distance: "{city} · {km} km",
+        emergency: "24/7-Notdienst",
+        jobsHereOne: "1 Auftrag in diesem Gebäude",
+        jobsHere: "{count} Aufträge in diesem Gebäude",
+      },
+      noneInArea:
+        "Kein hinterlegter Betrieb deckt {city} ab. Das sind die nächstgelegenen.",
+      firstVisit: "Erster Termin {when}",
+      book: "Termin buchen",
+      booked: "Termin gebucht",
+      visit: "Termin",
+      phone: "Telefon",
+      status: {
+        requested: "Angefragt",
+        accepted: "Angenommen",
+        scheduled: "Geplant",
+        in_progress: "In Arbeit",
+        completed: "Abgeschlossen",
+        invoiced: "Abgerechnet",
+      },
+      simulated: "Die Bestätigung des Betriebs ist in dieser Demo simuliert.",
+      residentInformed:
+        "Cora nennt der Mietpartei Termin und Betrieb, wenn sie anruft.",
+      retry: "Erneut versuchen",
+      back: "Zurück",
     },
     calls: {
       title: "Anrufzusammenfassung",

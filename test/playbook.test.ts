@@ -59,7 +59,11 @@ describe("ticket playbook", () => {
       "agreeAccess",
       "confirmFixed",
     ])
-    expect(plan.steps[1]).toEqual({ kind: "commission", trade: "plumber" })
+    expect(plan.steps[1]).toEqual({
+      kind: "commission",
+      trade: "plumber",
+      done: false,
+    })
     expect(plan).toMatchObject({
       target: "twoHours",
       due: { at: new Date("2026-11-21T10:00:00Z") },
@@ -96,7 +100,7 @@ describe("ticket playbook", () => {
     // Reported Saturday: Mon, Tue, Wed.
     expect(plan.due).toEqual({ day: "2026-11-25" })
     expect(plan.steps).toEqual([
-      { kind: "commission", trade: "liftService" },
+      { kind: "commission", trade: "liftService", done: false },
       { kind: "informResidents" },
       { kind: "confirmFixed" },
     ])

@@ -1,3 +1,4 @@
+export * from "./contractors"
 export * from "./operations"
 export * from "./partners"
 export * from "./portfolio"
