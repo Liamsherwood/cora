@@ -46,7 +46,7 @@ describe("directory", () => {
   })
 
   it("finds a person by name and shows their roles and units", async () => {
-    const [lena] = await listPeople(db, { q: "lena hoff" })
+    const [lena] = await listPeople(db, { q: "liam sher" })
     expect(lena).toMatchObject({ id: LENA, name: "Liam Sherwood" })
     expect(lena!.roles).toContain("tenant")
     expect(lena!.units.map((u) => u.id)).toContain(UNIT_4B)
@@ -66,7 +66,7 @@ describe("directory", () => {
   })
 
   it("finds units by tenant name", async () => {
-    expect(await findUnitsByTenant(db, "Hoffmann")).toContain(UNIT_4B)
+    expect(await findUnitsByTenant(db, "Sherwood")).toContain(UNIT_4B)
     expect(await findUnitsByTenant(db, " ")).toEqual([])
   })
 
