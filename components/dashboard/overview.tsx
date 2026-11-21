@@ -13,11 +13,11 @@ import { Button } from "@/components/ui/button"
 import {
   activeRequests,
   attentionRequests,
-  properties,
   type Property,
   type Request,
 } from "./data"
 import { formatMessage, useDashboardLocale } from "./locale"
+import { useProperties } from "./portfolio"
 import { PropertyList } from "./property-list"
 import { RentChart } from "./rent-chart"
 import type { RentPeriod } from "./rent-history"
@@ -41,6 +41,7 @@ export function Overview({
   onAttention: () => void
 }) {
   const { messages, format } = useDashboardLocale()
+  const properties = useProperties()
   const units = properties.reduce((sum, property) => sum + property.units, 0)
   const occupied = properties.reduce(
     (sum, property) => sum + property.occupied,
@@ -62,7 +63,7 @@ export function Overview({
     },
     {
       label: messages.occupancy,
-      value: format.precisePercent(occupied / units),
+      value: format.precisePercent(units ? occupied / units : 0),
       detail: formatMessage(messages.occupiedUnits, {
         occupied: format.number(occupied),
         total: format.number(units),
@@ -156,6 +157,7 @@ export function Overview({
         requests={requests}
         onProperty={onProperty}
         onViewAll={onProperties}
+        limit={6}
       />
     </div>
   )

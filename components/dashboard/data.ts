@@ -1,35 +1,15 @@
-export const properties = [
-  {
-    id: "the-linden",
-    name: "The Linden",
-    address: "Lindenstraße 42, Berlin",
-    units: 48,
-    occupied: 47,
-  },
-  {
-    id: "rosenhof",
-    name: "Rosenhof",
-    address: "Rosenstraße 8, Berlin",
-    units: 36,
-    occupied: 34,
-  },
-  {
-    id: "park-courtyard",
-    name: "Park Courtyard",
-    address: "Parkstraße 16, Potsdam",
-    units: 28,
-    occupied: 26,
-  },
-  {
-    id: "uferhaus",
-    name: "Uferhaus",
-    address: "Uferstraße 24, Berlin",
-    units: 20,
-    occupied: 20,
-  },
-]
+import type { PropertySummary } from "@/lib/centrix/portfolio"
 
-export type Property = (typeof properties)[number]
+export type Property = PropertySummary
+
+/** Seed property ids (data/seed.json) the demo maintenance requests are filed against. */
+const seedProperty = {
+  dorotheenstrasse: "2bb9ecd8-944b-5bfd-b6e6-4c4f81a4ceb9",
+  muensterstrasse: "e236b232-2232-52bc-9255-0875045e36d5",
+  koelnerLandstrasse: "d852c1ce-34d8-5c38-bca1-aad1925838ff",
+  kaiserswertherStrasse: "8d9eef5a-e224-5c37-b90c-3b8e760a94d3",
+  lorettostrasse: "ef23581a-c79f-5b47-b8a0-7043191eefb7",
+}
 
 export const priorities = ["Routine", "High", "Urgent"] as const
 export type Priority = (typeof priorities)[number]
@@ -48,37 +28,37 @@ export type Request = RequestState & { title: string; description: string }
 export const demoRequests = [
   {
     id: "heating",
-    propertyId: "the-linden",
+    propertyId: seedProperty.dorotheenstrasse,
     priority: "Urgent",
     status: "Open",
   },
   {
     id: "leak",
-    propertyId: "rosenhof",
+    propertyId: seedProperty.muensterstrasse,
     priority: "Urgent",
     status: "Open",
   },
   {
     id: "entry",
-    propertyId: "park-courtyard",
+    propertyId: seedProperty.koelnerLandstrasse,
     priority: "High",
     status: "Awaiting vendor",
   },
   {
     id: "inspection",
-    propertyId: "the-linden",
+    propertyId: seedProperty.muensterstrasse,
     priority: "Routine",
     status: "Scheduled",
   },
   {
     id: "lighting",
-    propertyId: "rosenhof",
+    propertyId: seedProperty.kaiserswertherStrasse,
     priority: "Routine",
     status: "Open",
   },
   {
     id: "intercom",
-    propertyId: "uferhaus",
+    propertyId: seedProperty.lorettostrasse,
     priority: "Routine",
     status: "Scheduled",
   },

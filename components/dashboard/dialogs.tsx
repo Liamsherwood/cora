@@ -14,15 +14,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 
-import {
-  priorities,
-  properties,
-  type Priority,
-  type Property,
-  type Request,
-} from "./data"
+import { priorities, type Priority, type Property, type Request } from "./data"
 
 import { useDashboardLocale } from "./locale"
+import { useProperties } from "./portfolio"
 
 const field =
   "w-full rounded-md border border-input bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground"
@@ -33,6 +28,7 @@ export function NewRequestDialog({
   onCreate: (request: Request) => void
 }) {
   const { messages } = useDashboardLocale()
+  const properties = useProperties()
   const [error, setError] = useState<string>()
   const input = useRef<HTMLInputElement>(null)
 
@@ -146,6 +142,7 @@ export function SearchDialog({
   onRequest: (request: Request) => void
 }) {
   const { messages } = useDashboardLocale()
+  const properties = useProperties()
   const [query, setQuery] = useState("")
   const normalized = normalizeSearch(query.trim())
   const matches = [

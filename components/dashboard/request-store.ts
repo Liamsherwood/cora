@@ -3,7 +3,7 @@ import { useMemo, useSyncExternalStore } from "react"
 import { demoRequests, type Request, type RequestState } from "./data"
 import { useDashboardLocale } from "./locale"
 
-const storageKey = "cora.demo.requests.v1"
+const storageKey = "cora.demo.requests.v2"
 const changeEvent = "cora:requests-change"
 const demoSnapshot = JSON.stringify(demoRequests)
 let inMemorySnapshot: string | null = null

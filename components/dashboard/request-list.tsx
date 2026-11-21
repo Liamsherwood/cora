@@ -9,8 +9,9 @@ import { HugeiconsIcon } from "@hugeicons/react"
 
 import { cn } from "@/lib/utils"
 
-import { properties, type Request } from "./data"
+import type { Request } from "./data"
 import { useDashboardLocale } from "./locale"
+import { useProperties } from "./portfolio"
 
 const badgeColors = {
   Open: "bg-muted text-muted-foreground",
@@ -47,6 +48,7 @@ export function RequestList({
   onRequest: (request: Request) => void
 }) {
   const { messages } = useDashboardLocale()
+  const properties = useProperties()
   if (requests.length === 0) {
     return (
       <div className="flex items-center gap-2 py-5 text-sm text-muted-foreground">

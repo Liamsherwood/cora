@@ -101,7 +101,7 @@ const en = {
           "Residents on the third floor reported that their radiators are cold. Arrange a boiler inspection.",
       },
       leak: {
-        title: "Water leak in unit 3B",
+        title: "Water leak in flat 3.02",
         description:
           "Water is pooling under the kitchen sink. The resident has shut off the supply to the unit.",
       },
@@ -122,7 +122,7 @@ const en = {
       intercom: {
         title: "Intercom fault",
         description:
-          "The entry intercom for unit 2A is ringing intermittently.",
+          "The entry intercom for the flat on the 2nd floor left is ringing intermittently.",
       },
     },
     skipToContent: "Skip to content",

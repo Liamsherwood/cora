@@ -20,13 +20,13 @@ import {
 import {
   activeRequests,
   attentionRequests,
-  properties,
   type Property,
   type Request,
 } from "./data"
 import { NewRequestDialog, SearchDialog } from "./dialogs"
 import { formatMessage, useDashboardLocale } from "./locale"
 import { Overview } from "./overview"
+import { useProperties } from "./portfolio"
 import { PropertyList, PropertySummary } from "./property-list"
 import { RentChart } from "./rent-chart"
 import type { RentPeriod } from "./rent-history"
@@ -51,6 +51,7 @@ export function Dashboard({ rentHistory }: { rentHistory: RentPeriod[] }) {
   const [requestFilter, setRequestFilter] = useState<RequestFilter>("active")
   const [announcement, setAnnouncement] = useState("")
   const requests = useRequests()
+  const properties = useProperties()
   const attention = attentionRequests(requests)
   const active = activeRequests(requests)
   const requestGroups = {

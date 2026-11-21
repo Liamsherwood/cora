@@ -1,19 +1,30 @@
 import { notFound } from "next/navigation"
+import { connection } from "next/server"
 
 import { Dashboard } from "@/components/dashboard/dashboard"
 import { DashboardLocaleProvider } from "@/components/dashboard/locale"
+import { PortfolioProvider } from "@/components/dashboard/portfolio"
 import { getRentHistory } from "@/components/dashboard/rent-history"
+import { getPortfolioOverview } from "@/lib/centrix/portfolio"
+import { getDb } from "@/lib/db"
 import { getMessages } from "@/lib/i18n/dictionaries"
 import { isLocale } from "@/lib/i18n/locales"
+import { now, toDay } from "@/lib/time"
 
 export default async function Page({ params }: PageProps<"/[locale]">) {
+  await connection()
   const { locale } = await params
   if (!isLocale(locale)) notFound()
-  const { dashboard } = await getMessages(locale)
+  const [{ dashboard }, portfolio] = await Promise.all([
+    getMessages(locale),
+    getPortfolioOverview(getDb(), toDay(now())),
+  ])
 
   return (
     <DashboardLocaleProvider locale={locale} messages={dashboard}>
-      <Dashboard rentHistory={getRentHistory(locale)} />
+      <PortfolioProvider properties={portfolio.properties}>
+        <Dashboard rentHistory={getRentHistory(portfolio.rentRoll, locale)} />
+      </PortfolioProvider>
     </DashboardLocaleProvider>
   )
 }

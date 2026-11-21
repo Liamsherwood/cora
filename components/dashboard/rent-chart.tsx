@@ -3,7 +3,15 @@ import { cn } from "@/lib/utils"
 import { formatMessage, useDashboardLocale } from "./locale"
 import type { RentPeriod } from "./rent-history"
 
-const axis = [150000, 100000, 50000, 0]
+/** Four gridlines (three steps) whose top line clears the largest amount shown. */
+function chartAxis(max: number) {
+  const rough = Math.max(max, 1) / 3
+  const magnitude = 10 ** Math.floor(Math.log10(rough))
+  const step =
+    [1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10].find((n) => n * magnitude >= rough)! *
+    magnitude
+  return [3, 2, 1, 0].map((n) => n * step)
+}
 
 export function RentChart({
   month,
@@ -14,6 +22,9 @@ export function RentChart({
 }) {
   const { messages, format } = useDashboardLocale()
   const history = rentHistory.slice(month - 5, month + 1)
+  const axis = chartAxis(
+    Math.max(...history.map((p) => Math.max(p.collected, p.expected)))
+  )
 
   return (
     <figure className="rounded-2xl border border-border bg-card p-5 shadow-panel sm:p-6">

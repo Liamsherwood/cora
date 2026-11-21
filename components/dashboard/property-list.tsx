@@ -1,22 +1,31 @@
-import { ArrowRight01Icon, ArrowRightIcon } from "@hugeicons/core-free-icons"
+import {
+  ArrowRight01Icon,
+  ArrowRightIcon,
+  Building03Icon,
+} from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
-import Image from "next/image"
 
 import { Button } from "@/components/ui/button"
 
-import { activeRequests, properties, type Property, type Request } from "./data"
+import { activeRequests, type Property, type Request } from "./data"
 import { formatMessage, useDashboardLocale } from "./locale"
+import { useProperties } from "./portfolio"
 
 export function PropertyList({
   requests,
   onProperty,
   onViewAll,
+  limit,
 }: {
   requests: Request[]
   onProperty: (property: Property) => void
   onViewAll?: () => void
+  /** Show only the first rows (the largest properties). */
+  limit?: number
 }) {
   const { messages, format } = useDashboardLocale()
+  const properties = useProperties()
+  const rows = limit ? properties.slice(0, limit) : properties
   const open = activeRequests(requests)
 
   return (
@@ -66,7 +75,7 @@ export function PropertyList({
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {properties.map((property) => {
+            {rows.map((property) => {
               const occupancy = property.occupied / property.units
               const openCount = open.filter(
                 ({ propertyId }) => propertyId === property.id
@@ -75,14 +84,12 @@ export function PropertyList({
                 <tr key={property.id} className="hover:bg-muted/50">
                   <th scope="row" className="px-3.5 py-3 font-normal sm:px-6">
                     <div className="flex items-center gap-3">
-                      <Image
-                        src={`/properties/${property.id}.webp`}
-                        alt=""
-                        width={40}
-                        height={40}
-                        className="size-10 shrink-0 rounded-lg bg-muted object-cover outline -outline-offset-1 outline-black/10 dark:outline-white/10"
-                        unoptimized
-                      />
+                      <span
+                        aria-hidden="true"
+                        className="grid size-10 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground"
+                      >
+                        <HugeiconsIcon icon={Building03Icon} size={18} />
+                      </span>
                       <div>
                         <button
                           type="button"

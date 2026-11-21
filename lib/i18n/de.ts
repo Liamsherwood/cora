@@ -103,7 +103,7 @@ export default {
           "Bewohner im dritten Stock melden kalte Heizkörper. Eine Überprüfung der Heizungsanlage veranlassen.",
       },
       leak: {
-        title: "Wasseraustritt in Wohnung 3B",
+        title: "Wasseraustritt in Wohnung 3.02",
         description:
           "Unter der Küchenspüle sammelt sich Wasser. Die Wasserzufuhr zur Wohnung wurde abgestellt.",
       },
@@ -125,7 +125,7 @@ export default {
       intercom: {
         title: "Störung der Gegensprechanlage",
         description:
-          "Die Gegensprechanlage für Wohnung 2A klingelt sporadisch.",
+          "Die Gegensprechanlage für die Wohnung 2. OG links klingelt sporadisch.",
       },
     },
     skipToContent: "Zum Inhalt springen",
