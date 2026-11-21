@@ -43,7 +43,7 @@ const examples: DemoTicket[] = [
     summaryKey: "tap",
     classification: { category: "plumbing", priority: "normal", scope: "unit" },
     caseId: "90000000-0000-4000-8000-000000000001",
-    tenantName: "Lena Hoffmann",
+    tenantName: "Liam Hoffmann",
     propertyAddress: "Musterstraße 12",
     unitIdentifier: "4B",
     resolvedAt: null,

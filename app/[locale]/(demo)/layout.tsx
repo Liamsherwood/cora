@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 const NAV = [
   { path: "", label: "Dashboard" },
   { path: "/services", label: "Directory (property manager)" },
-  { path: `/portal/${DEMO_TENANT_ID}`, label: "Tenant portal (Lena)" },
+  { path: `/portal/${DEMO_TENANT_ID}`, label: "Tenant portal (Liam)" },
   { path: "/partner", label: "Partner dashboard" },
 ]
 

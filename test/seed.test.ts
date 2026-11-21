@@ -83,7 +83,7 @@ describe("demo reset", () => {
       .select()
       .from(t.parties)
       .where(eq(t.parties.id, LENA))
-    expect(lena!.name).toBe("Lena Hoffmann")
+    expect(lena!.name).toBe("Liam Hoffmann")
     expect(await db.select().from(t.partners)).toHaveLength(2)
     expect(await db.select().from(t.properties)).toHaveLength(
       seed.properties.length + 1

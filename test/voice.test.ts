@@ -50,15 +50,15 @@ describe("caller lookup", () => {
   it("needs the exact name and the street without caller ID", async () => {
     const c = await findCallerByNameAndStreet(
       db,
-      "Lena Hoffmann",
+      "Liam Hoffmann",
       "Musterstr. 12"
     )
     expect(c?.party_id).toBe(LENA)
     expect(
-      await findCallerByNameAndStreet(db, "Lena Hoffmann", "Ackerstraße")
+      await findCallerByNameAndStreet(db, "Liam Hoffmann", "Ackerstraße")
     ).toBeNull()
     expect(
-      await findCallerByNameAndStreet(db, "Lena", "Musterstraße")
+      await findCallerByNameAndStreet(db, "Liam", "Musterstraße")
     ).toBeNull()
   })
 
@@ -68,7 +68,7 @@ describe("caller lookup", () => {
     const known = await supportContext(db, await getCaller(db, LENA))
     expect(known).toMatchObject({
       caller_known: "yes",
-      caller_first_name: "Lena",
+      caller_first_name: "Liam",
       unit_id: UNIT_4B,
       move_in_date: "2026-12-01",
       open_cases: "none",
