@@ -1,5 +1,5 @@
 {
-  "_comment": "Demo data. (1) Musterstraße 12, Aachen: the hand-made demo case. Fixed UUIDs: the prefix says the kind (1 property, 2 building, 3 unit, 4 party, 5 lease, 6 mandate, 7 asset, 8 meter), the tail mirrors the old ids (unit 4B -> ...4b, party c_202 -> ...0202). (2) A generated NRW portfolio of a Düsseldorf property manager: 24 properties (15 rental houses, 9 WEGs) in Düsseldorf, Köln, Neuss, Duisburg, Krefeld, Essen, Mönchengladbach, Ratingen, Hilden, Leverkusen and Meerbusch, with owners, tenants, lease history, mandates, fittings and meters. Its UUIDs are stable hashes. All people, companies and numbers are made up; the streets are real. Phone numbers are unassignable on purpose (Bundesnetzagentur numbers for media productions, or a 0 right after the area code), so a live demo call or message can never reach a real person. The exceptions are three demo tenants with a move-in on 1 Dec 2026, whose numbers are real so a live demo call rings a phone: Liam Hoffmann (Aachen 4B), Benedikt Theisen and Jürgen Zimmermann (Ackerstraße 81, Düsseldorf); e-mails use reserved example domains. The portfolio also carries a year of history: repair and move cases with German descriptions, contractor work orders, case documents and events (lease signed, move-in/out, repairs, annual statements, meter readings, owner changes), all dated up to DEMO_NOW.",
+  "_comment": "Demo data. (1) Musterstraße 12, Aachen: the hand-made demo case. Fixed UUIDs: the prefix says the kind (1 property, 2 building, 3 unit, 4 party, 5 lease, 6 mandate, 7 asset, 8 meter), the tail mirrors the old ids (unit 4B -> ...4b, party c_202 -> ...0202). (2) A generated NRW portfolio of a Düsseldorf property manager: 24 properties (15 rental houses, 9 WEGs) in Düsseldorf, Köln, Neuss, Duisburg, Krefeld, Essen, Mönchengladbach, Ratingen, Hilden, Leverkusen and Meerbusch, with owners, tenants, lease history, mandates, fittings and meters. Its UUIDs are stable hashes. All people, companies and numbers are made up; the streets are real. Phone numbers are unassignable on purpose (Bundesnetzagentur numbers for media productions, or a 0 right after the area code), so a live demo call or message can never reach a real person. The exceptions are three demo tenants with a move-in on 1 Dec 2026, whose numbers are real so a live demo call rings a phone: Liam Sherwood (Aachen 4B), Benedikt Theisen and Jürgen Zimmermann (Ackerstraße 81, Düsseldorf); e-mails use reserved example domains. The portfolio also carries a year of history: repair and move cases with German descriptions, contractor work orders, case documents and events (lease signed, move-in/out, repairs, annual statements, meter readings, owner changes), all dated up to DEMO_NOW.",
   "properties": [
     {
       "id": "10000000-0000-4000-8000-000000000012",
@@ -4007,8 +4007,8 @@
     {
       "id": "40000000-0000-4000-8000-000000000202",
       "type": "person",
-      "name": "Liam Hoffmann",
-      "email": "liam@example.com",
+      "name": "Liam Sherwood",
+      "email": "liam.sherwood@example.com",
       "phone": "+49 172 8537122",
       "whatsapp_opt_in": true,
       "language": "de"

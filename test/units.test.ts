@@ -35,8 +35,8 @@ const snapshot: UnitSnapshot = {
   owner: { contact_id: "o", name: "Maria Becker" },
   tenant: {
     contact_id: "t",
-    name: "Liam Hoffmann",
-    email: "liam@example.com",
+    name: "Liam Sherwood",
+    email: "liam.sherwood@example.com",
     phone: "+49",
     language: "de",
     whatsapp_opt_in: true,

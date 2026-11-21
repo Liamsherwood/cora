@@ -50,12 +50,12 @@ describe("caller lookup", () => {
   it("needs the exact name and the street without caller ID", async () => {
     const c = await findCallerByNameAndStreet(
       db,
-      "Liam Hoffmann",
+      "Liam Sherwood",
       "Musterstr. 12"
     )
     expect(c?.party_id).toBe(LENA)
     expect(
-      await findCallerByNameAndStreet(db, "Liam Hoffmann", "Ackerstraße")
+      await findCallerByNameAndStreet(db, "Liam Sherwood", "Ackerstraße")
     ).toBeNull()
     expect(
       await findCallerByNameAndStreet(db, "Liam", "Musterstraße")

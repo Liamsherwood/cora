@@ -47,7 +47,7 @@ describe("directory", () => {
 
   it("finds a person by name and shows their roles and units", async () => {
     const [lena] = await listPeople(db, { q: "lena hoff" })
-    expect(lena).toMatchObject({ id: LENA, name: "Liam Hoffmann" })
+    expect(lena).toMatchObject({ id: LENA, name: "Liam Sherwood" })
     expect(lena!.roles).toContain("tenant")
     expect(lena!.units.map((u) => u.id)).toContain(UNIT_4B)
   })
@@ -59,7 +59,7 @@ describe("directory", () => {
 
   it("loads everything linked to a person", async () => {
     const person = await getPerson(db, LENA)
-    expect(person?.party.name).toBe("Liam Hoffmann")
+    expect(person?.party.name).toBe("Liam Sherwood")
     expect(person?.leases.some((l) => l.unitId === UNIT_4B)).toBe(true)
     expect(await getPerson(db, "not-a-uuid")).toBeNull()
     expect(await getPerson(db, newId())).toBeNull()
