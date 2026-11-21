@@ -18,8 +18,9 @@ afterAll(closeDb)
 describe("demo reset", () => {
   it("clears the demo's workflows and keeps everything else", async () => {
     // Demo activity on a seed unit, up to a placed order.
+    const demoEventId = newId()
     const ev = await triggerEvent(db, {
-      id: newId(),
+      id: demoEventId,
       type: "tenant.move_in",
       unit_id: UNIT_4B,
       party_id: LENA,
@@ -59,12 +60,15 @@ describe("demo reset", () => {
 
     const seed = await readSeedFile()
     const seedUnits = seed.units.map((u) => u.id)
-    expect(
+    // The demo's events are gone; what is left on seed units is the seeded history.
+    const eventIds = (
       await db
-        .select()
+        .select({ id: t.events.id })
         .from(t.events)
         .where(inArray(t.events.unitId, seedUnits))
-    ).toEqual([])
+    ).map((e) => e.id)
+    expect(eventIds).not.toContain(demoEventId)
+    expect(eventIds.sort()).toEqual(seed.events.map((e) => e.id).sort())
     expect(await db.select().from(t.workflowRuns)).toEqual([])
     expect(await db.select().from(t.serviceOrders)).toEqual([])
     expect(await db.select().from(t.consents)).toEqual([])
