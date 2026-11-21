@@ -53,9 +53,11 @@ const REF_PREFIX: Record<DocumentKind, string> = {
   owner_sheet: "ES",
 }
 
-export function documentRef(kind: DocumentKind, id: string) {
+export function documentRef(kind: DocumentKind, id: string, party?: string) {
   // The end of the id: the seed's fixed demo ids only differ there.
-  return `${REF_PREFIX[kind]}-${id.slice(-8).toUpperCase()}`
+  const ref = `${REF_PREFIX[kind]}-${id.slice(-8).toUpperCase()}`
+  // A lease can have several guarantors, each with their own guarantee.
+  return party ? `${ref}-${party.slice(-4).toUpperCase()}` : ref
 }
 
 /** One entry in a document list; `party` picks the person on per-person documents. */
@@ -639,4 +641,189 @@ export function tenancyStatus(
 ): "current" | "upcoming" | "ended" {
   if (lease.startDate > day) return "upcoming"
   return isOngoing(lease.endDate, day) ? "current" : "ended"
+}
+
+/** A document in the property manager's files, as listed in the directory's Documents tab. */
+export type FiledDocument = DocumentLink & {
+  /** Who the document is for: tenants, guarantor, client, owner or consenting tenant. */
+  subject: string | null
+  /** The property (and unit) the document is about; none for an owner's record sheet. */
+  place: { address: string; unit: string | null } | null
+  /** Position among the property's buildings, when it has several. */
+  building?: { number: number; of: number }
+}
+
+const byText = new Intl.Collator("de", { numeric: true, sensitivity: "base" })
+
+/** Property, then unit, then document type, newest first, then name. */
+function compareFiled(a: FiledDocument, b: FiledDocument) {
+  if (a.place && !b.place) return -1
+  if (!a.place && b.place) return 1
+  const key = (d: FiledDocument) =>
+    !d.when ? "" : "day" in d.when ? d.when.day : d.when.at.toISOString()
+  return (
+    byText.compare(a.place?.address ?? "", b.place?.address ?? "") ||
+    byText.compare(a.place?.unit ?? "", b.place?.unit ?? "") ||
+    (a.building?.number ?? 0) - (b.building?.number ?? 0) ||
+    DOCUMENT_KINDS.indexOf(a.kind) - DOCUMENT_KINDS.indexOf(b.kind) ||
+    key(b).localeCompare(key(a)) ||
+    byText.compare(a.subject ?? "", b.subject ?? "")
+  )
+}
+
+/**
+ * Every document on file across the portfolio: the same documents the unit and person
+ * panels list, plus those of past tenancies, which stay in the files.
+ */
+export async function listFiledDocuments(db: Exec): Promise<FiledDocument[]> {
+  const day = today()
+  const [leases, people, buildings, mandates, consents, ownerships] =
+    await Promise.all([
+      db
+        .select({
+          leaseId: t.leases.id,
+          startDate: t.leases.startDate,
+          unit: t.units.identifier,
+          address: t.properties.address,
+        })
+        .from(t.leases)
+        .innerJoin(t.units, eq(t.leases.unitId, t.units.id))
+        .innerJoin(t.properties, eq(t.units.propertyId, t.properties.id)),
+      db
+        .select({
+          leaseId: t.leaseParties.leaseId,
+          partyId: t.parties.id,
+          name: t.parties.name,
+          role: t.leaseParties.role,
+        })
+        .from(t.leaseParties)
+        .innerJoin(t.parties, eq(t.leaseParties.partyId, t.parties.id))
+        .orderBy(asc(t.parties.name)),
+      db
+        .select({
+          id: t.buildings.id,
+          propertyId: t.buildings.propertyId,
+          energyClass: t.buildings.energyClass,
+          address: t.properties.address,
+        })
+        .from(t.buildings)
+        .innerJoin(t.properties, eq(t.buildings.propertyId, t.properties.id))
+        .orderBy(asc(t.buildings.id)),
+      db
+        .select({
+          id: t.mandates.id,
+          name: t.parties.name,
+          address: t.properties.address,
+        })
+        .from(t.mandates)
+        .innerJoin(t.parties, eq(t.mandates.partyId, t.parties.id))
+        .innerJoin(t.properties, eq(t.mandates.propertyId, t.properties.id)),
+      db
+        .select({
+          id: t.consents.id,
+          givenAt: t.consents.givenAt,
+          name: t.parties.name,
+          partner: t.partners.name,
+          unit: t.units.identifier,
+          address: t.properties.address,
+        })
+        .from(t.consents)
+        .innerJoin(t.parties, eq(t.consents.partyId, t.parties.id))
+        .innerJoin(t.partners, eq(t.consents.partnerId, t.partners.id))
+        .leftJoin(
+          t.workflowRuns,
+          eq(t.consents.workflowRunId, t.workflowRuns.id)
+        )
+        .leftJoin(t.events, eq(t.workflowRuns.eventId, t.events.id))
+        .leftJoin(t.units, eq(t.events.unitId, t.units.id))
+        .leftJoin(t.properties, eq(t.units.propertyId, t.properties.id)),
+      db
+        .select({
+          partyId: t.ownerships.partyId,
+          unitId: t.ownerships.unitId,
+          name: t.parties.name,
+        })
+        .from(t.ownerships)
+        .innerJoin(t.parties, eq(t.ownerships.partyId, t.parties.id)),
+    ])
+
+  const filed: FiledDocument[] = []
+  const onLease = Map.groupBy(people, (p) => p.leaseId)
+  for (const lease of leases) {
+    const parties = onLease.get(lease.leaseId) ?? []
+    const tenants = parties
+      .filter((p) => p.role === "tenant" || p.role === "co_tenant")
+      .sort((a, b) => Number(b.role === "tenant") - Number(a.role === "tenant"))
+    // A lease without a tenant on record has nothing to fill in.
+    if (tenants.length === 0) continue
+    const place = { address: lease.address, unit: lease.unit }
+    const subject = tenants.map((p) => p.name).join(", ")
+    for (const link of tenancyLinks(lease, [subject], day))
+      filed.push({ ...link, subject, place })
+    for (const g of parties.filter((p) => p.role === "guarantor"))
+      filed.push({
+        kind: "guarantee",
+        id: lease.leaseId,
+        party: g.partyId,
+        context: [g.name],
+        when: { day: lease.startDate },
+        subject: g.name,
+        place,
+      })
+  }
+
+  const perProperty = Map.groupBy(buildings, (b) => b.propertyId)
+  for (const b of buildings) {
+    if (!b.energyClass) continue
+    const siblings = perProperty.get(b.propertyId)!
+    filed.push({
+      kind: "energy",
+      id: b.id,
+      context: [],
+      energyClass: b.energyClass,
+      when: null,
+      subject: null,
+      place: { address: b.address, unit: null },
+      building:
+        siblings.length > 1
+          ? {
+              number: siblings.findIndex((s) => s.id === b.id) + 1,
+              of: siblings.length,
+            }
+          : undefined,
+    })
+  }
+
+  for (const m of mandates)
+    filed.push({
+      kind: "management",
+      id: m.id,
+      context: [m.name],
+      when: null,
+      subject: m.name,
+      place: { address: m.address, unit: null },
+    })
+
+  for (const c of consents)
+    filed.push({
+      kind: "consent",
+      id: c.id,
+      context: [c.partner],
+      when: { at: c.givenAt },
+      subject: `${c.name} · ${c.partner}`,
+      place: c.address ? { address: c.address, unit: c.unit } : null,
+    })
+
+  for (const [partyId, owned] of Map.groupBy(ownerships, (o) => o.partyId))
+    filed.push({
+      kind: "owner_sheet",
+      id: partyId,
+      context: [],
+      units: new Set(owned.map((o) => o.unitId)).size,
+      when: null,
+      subject: owned[0]!.name,
+      place: null,
+    })
+
+  return filed.sort(compareFiled)
 }

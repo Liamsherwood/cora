@@ -9,6 +9,11 @@ import { formatMessage as fm } from "@/lib/i18n/format-message"
 import type { DirectoryFormat } from "./format"
 import { Empty, Fact, Panel, type DirectoryMessages } from "./ui"
 
+/** Both locales only need "one" and "other". */
+function plural(forms: { one: string; other: string }, n: number) {
+  return n === 1 ? forms.one : forms.other
+}
+
 /** Partners: every connected partner (from its manifest) with its offers and usage. */
 export async function PartnersTab({
   db,
@@ -36,10 +41,14 @@ export async function PartnersTab({
         <Panel
           key={p.id}
           title={p.name}
-          description={fm(m.usage, {
-            workflows: format.number(p.workflows),
-            orders: format.number(p.orders),
-          })}
+          description={[
+            fm(plural(m.workflowCount, p.workflows), {
+              count: format.number(p.workflows),
+            }),
+            fm(plural(m.orderCount, p.orders), {
+              count: format.number(p.orders),
+            }),
+          ].join(", ")}
           action={
             <Link
               href={`/${locale}/partner`}
@@ -113,7 +122,7 @@ export async function PartnersTab({
                     <td className="px-3 py-2.5 pr-4 tabular-nums sm:pr-6">
                       {o.leadTimeBusinessDays == null
                         ? "–"
-                        : fm(m.leadTimeValue, {
+                        : fm(plural(m.leadTimeValue, o.leadTimeBusinessDays), {
                             days: format.number(o.leadTimeBusinessDays),
                           })}
                     </td>

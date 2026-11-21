@@ -163,8 +163,9 @@ function tenancySignatures(d: TenancyRecord, m: DocumentMessages) {
 const reference = (
   m: DocumentMessages,
   kind: Parameters<typeof documentRef>[0],
-  id: string
-) => fm(m.ref, { ref: documentRef(kind, id) })
+  id: string,
+  party?: string
+) => fm(m.ref, { ref: documentRef(kind, id, party) })
 
 const issuedIn = (m: DocumentMessages, f: DocumentFormat, day: string) =>
   fm(m.common.placeDate, { place: ISSUER.city, date: f.day(day) })
@@ -397,9 +398,7 @@ function Guarantee({
   return (
     <>
       <Letterhead
-        reference={`${reference(m, "guarantee", d.lease.id)}-${guarantor.id
-          .slice(-4)
-          .toUpperCase()}`}
+        reference={reference(m, "guarantee", d.lease.id, guarantor.id)}
       />
       <Title>{g.title}</Title>
       <Facts

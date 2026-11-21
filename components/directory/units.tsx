@@ -21,10 +21,11 @@ import { AppError } from "@/lib/errors"
 import { formatMessage as fm } from "@/lib/i18n/format-message"
 import { isUuid } from "@/lib/ids"
 import { cn } from "@/lib/utils"
-import { getRunView, listRuns } from "@/lib/workflow/engine"
+import { getRunView, hasStartedMoveIn, listRuns } from "@/lib/workflow/engine"
 import { TRACKING_STEPS } from "@/lib/workflow/states"
 
 import type { DirectoryFormat } from "./format"
+import { MoveInAction } from "./move-in-action"
 import {
   directoryHref,
   Empty,
@@ -203,7 +204,11 @@ async function UnitDetail({
   ])
   const selectedRun =
     runs.find((r) => r.id === runParam)?.id ?? runs[0]?.id ?? null
-  const view = selectedRun ? await getRunView(db, selectedRun) : null
+  const tenant = snapshot.tenant
+  const [view, moveInStarted] = await Promise.all([
+    selectedRun ? getRunView(db, selectedRun) : null,
+    tenant ? hasStartedMoveIn(db, unitId, tenant.move_in) : false,
+  ])
   const sizeValue =
     snapshot.unit.size_sqm == null && snapshot.unit.rooms == null
       ? "–"
@@ -220,12 +225,15 @@ async function UnitDetail({
           address: snapshot.property.address,
         })}
         action={
-          <ActionButton
+          <MoveInAction
+            key={`${unitId}:${tenant?.contact_id}:${tenant?.move_in}`}
             action={fireMoveInAction.bind(null, unitId)}
-            disabled={!snapshot.tenant}
-          >
-            {m.fireMoveIn}
-          </ActionButton>
+            disabled={!tenant}
+            started={moveInStarted}
+            startLabel={m.fireMoveIn}
+            pendingLabel={m.startingMoveIn}
+            startedLabel={m.moveInStarted}
+          />
         }
       >
         <dl className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4">
@@ -693,7 +701,7 @@ function NextStep({
       {state === "detected" && (
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <ActionButton
-            action={contactTenantAction.bind(null, v.run.id, "voice", locale)}
+            action={contactTenantAction.bind(null, v.run.id, "voice")}
           >
             {m.callTenant}
           </ActionButton>
@@ -701,18 +709,13 @@ function NextStep({
             variant="outline"
             disabled={!canWhatsApp}
             title={canWhatsApp ? undefined : m.noWhatsApp}
-            action={contactTenantAction.bind(
-              null,
-              v.run.id,
-              "whatsapp",
-              locale
-            )}
+            action={contactTenantAction.bind(null, v.run.id, "whatsapp")}
           >
             {m.sendWhatsApp}
           </ActionButton>
           <ActionButton
             variant="ghost"
-            action={contactTenantAction.bind(null, v.run.id, "portal", locale)}
+            action={contactTenantAction.bind(null, v.run.id, "portal")}
           >
             {m.sendToPortal}
           </ActionButton>
@@ -729,12 +732,7 @@ function NextStep({
           {state === "offer_sent" && canWhatsApp && !whatsappSent && (
             <ActionButton
               variant="outline"
-              action={contactTenantAction.bind(
-                null,
-                v.run.id,
-                "whatsapp",
-                locale
-              )}
+              action={contactTenantAction.bind(null, v.run.id, "whatsapp")}
             >
               {m.remindWhatsApp}
             </ActionButton>

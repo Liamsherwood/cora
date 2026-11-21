@@ -4,6 +4,7 @@ import { connection } from "next/server"
 
 import { DashboardLocaleProvider } from "@/components/dashboard/locale"
 import { WorkspaceShell } from "@/components/dashboard/workspace"
+import { DocumentsTab } from "@/components/directory/documents"
 import { directoryFormat } from "@/components/directory/format"
 import { PartnersTab } from "@/components/directory/partners"
 import { PeopleTab } from "@/components/directory/people"
@@ -12,6 +13,7 @@ import { UnitsTab } from "@/components/directory/units"
 import { WorkflowsTab } from "@/components/directory/workflows"
 import { AutoRefresh } from "@/components/partner-connect/auto-refresh"
 import { getDirectoryCounts } from "@/lib/centrix/directory"
+import { isDocumentKind, listFiledDocuments } from "@/lib/centrix/documents"
 import { getDb } from "@/lib/db"
 import { getMessages } from "@/lib/i18n/dictionaries"
 import { isLocale } from "@/lib/i18n/locales"
@@ -50,23 +52,23 @@ export default async function DirectoryPage({
   const page = /^[1-9]\d{0,5}$/.test(one(sp.page) ?? "") ? Number(sp.page) : 1
 
   const db = getDb()
-  const [{ dashboard, directory: messages, documents }, counts] =
-    await Promise.all([getMessages(locale), getDirectoryCounts(db)])
+  const [{ dashboard, directory: messages, documents }, counts, filed] =
+    await Promise.all([
+      getMessages(locale),
+      getDirectoryCounts(db),
+      listFiledDocuments(db),
+    ])
   const format = directoryFormat(locale)
   const shared = { db, locale, messages, format }
 
   return (
     <DashboardLocaleProvider locale={locale} messages={dashboard}>
-      <WorkspaceShell
-        current="services"
-        title={messages.title}
-        description={messages.description}
-      >
+      <WorkspaceShell current="services" title={messages.title}>
         <AutoRefresh />
         <DirectoryTabs
           locale={locale}
           current={tab}
-          counts={counts}
+          counts={{ ...counts, documents: filed.length }}
           messages={messages}
           formatNumber={format.number}
         />
@@ -86,6 +88,18 @@ export default async function DirectoryPage({
             q={q}
             page={page}
             personParam={one(sp.person)}
+          />
+        )}
+        {tab === "documents" && (
+          <DocumentsTab
+            locale={locale}
+            messages={messages}
+            documents={documents}
+            format={format}
+            filed={filed}
+            q={q}
+            kind={isDocumentKind(sp.kind) ? sp.kind : null}
+            page={page}
           />
         )}
         {tab === "partners" && <PartnersTab {...shared} />}

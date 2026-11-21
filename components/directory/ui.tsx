@@ -13,6 +13,7 @@ export type DirectoryMessages = Messages["directory"]
 export const DIRECTORY_TABS = [
   "units",
   "people",
+  "documents",
   "partners",
   "workflows",
 ] as const
@@ -164,12 +165,15 @@ export function SearchForm({
   q,
   placeholder,
   messages,
+  hidden,
 }: {
   locale: string
   tab: DirectoryTab
   q: string
   placeholder: string
   messages: DirectoryMessages
+  /** Filters the search keeps, e.g. the selected document type. */
+  hidden?: Record<string, string>
 }) {
   return (
     <Form
@@ -178,6 +182,9 @@ export function SearchForm({
       role="search"
     >
       {tab !== "units" && <input type="hidden" name="tab" value={tab} />}
+      {Object.entries(hidden ?? {}).map(([name, value]) => (
+        <input key={name} type="hidden" name={name} value={value} />
+      ))}
       <input
         type="search"
         name="q"
@@ -199,7 +206,10 @@ export function SearchForm({
       </Button>
       {q && (
         <Link
-          href={directoryHref(locale, { tab: tab === "units" ? null : tab })}
+          href={directoryHref(locale, {
+            tab: tab === "units" ? null : tab,
+            ...hidden,
+          })}
           className={buttonVariants({ variant: "ghost" })}
         >
           {messages.clearSearch}
