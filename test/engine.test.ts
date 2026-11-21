@@ -5,6 +5,7 @@ import type { DB } from "@/lib/db"
 import * as t from "@/lib/db/schema"
 import { getUnitSnapshot } from "@/lib/centrix/repository"
 import { loadManifestFiles, registerPartner } from "@/lib/connectors/registry"
+import { StatusUpdateSchema } from "@/lib/connectors/spec"
 import { newId } from "@/lib/ids"
 import { partnerSecret, sign } from "@/lib/partner/signature"
 import { handlePartnerWebhook } from "@/lib/partner/webhook"
@@ -377,6 +378,52 @@ describe("guards", () => {
     expect((order!.sharedPayload as Record<string, unknown>).move_in_date).toBe(
       "2026-12-15"
     )
+  })
+})
+
+describe("dates (stress-test findings)", () => {
+  it("an event without an id is still one event when retried", async () => {
+    const fire = () =>
+      triggerEvent(db, {
+        type: "tenant.move_in",
+        unit_id: UNIT_4B,
+        payload: { move_in_date: "2026-12-01" },
+      })
+    const [a, b] = await Promise.all([fire(), fire()])
+    const c = await fire()
+    expect(b.event_id).toBe(a.event_id)
+    expect(c.duplicate).toBe(true)
+    expect(await db.select().from(t.workflowRuns)).toHaveLength(2)
+  })
+
+  it("rejects impossible and long-past move-in dates with 422", async () => {
+    for (const d of ["2026-13-45", "2026-02-31", "1.12.2026", 20261201])
+      await expectAppError(moveIn(newId(), d as string), 422)
+    await expectAppError(moveIn(newId(), "2026-09-01"), 422)
+    // A move-in a few days ago still counts.
+    const recent = await moveIn(newId(), "2026-11-16")
+    expect(recent.runs.length).toBeGreaterThan(0)
+  })
+
+  it("rejects an impossible or implausible activation date", async () => {
+    const run = await offeredRun()
+    const { order_id } = await acceptOffer(db, run.id, { channel: "portal" })
+    expect(
+      StatusUpdateSchema.safeParse(
+        status(order_id, "active", { activation_date: "2026-02-31" })
+      ).success
+    ).toBe(false)
+    for (const d of ["1999-01-01", "2031-01-01"])
+      await expectAppError(
+        applyPartnerStatus(
+          db,
+          "example_fibre",
+          status(order_id, "active", { activation_date: d })
+        ),
+        422
+      )
+    const [order] = await ordersOf(run.id)
+    expect(order!.status).toBe("sent")
   })
 })
 

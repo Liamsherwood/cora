@@ -35,6 +35,15 @@ export function toDay(d: Date): string {
   return d.toISOString().slice(0, 10)
 }
 
+/** True for a real calendar day in "YYYY-MM-DD" form (rejects 2026-02-31, 2026-13-45). */
+export function isCalendarDay(v: unknown): v is string {
+  if (typeof v !== "string") return false
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v)
+  if (!m) return false
+  const d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])))
+  return toDay(d) === v
+}
+
 function parseDay(day: string): Date {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(day)
   if (!m) throw new Error(`invalid day: ${day}`)

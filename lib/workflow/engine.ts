@@ -21,7 +21,7 @@ import type {
 import { conflict, notFound, unprocessable } from "@/lib/errors"
 import { isUuid, nameUuid, newId } from "@/lib/ids"
 import { centsToEur, eurToCents, formatEur } from "@/lib/money"
-import { addDays, clock, now, toDay } from "@/lib/time"
+import { addDays, clock, isCalendarDay, now, toDay } from "@/lib/time"
 
 import { buildSharedPayload, FIELD_LABELS } from "./minimize"
 import { computeOffer, type ComputedOffer } from "./offers"
@@ -217,22 +217,31 @@ export type TriggerInput = {
   partner_slugs?: string[]
 }
 
+/** How far back a move-in (or a partner's activation date) may lie and still count. */
+const PAST_GRACE_DAYS = 30
+
 export async function triggerEvent(db: DB, input: TriggerInput) {
   if (input.id !== undefined && !isUuid(input.id))
     throw unprocessable("event id must be a uuid")
-  const eventId = input.id ?? newId()
 
   // Idempotent: the same event delivered twice returns the existing runs.
-  const [existing] = await db
-    .select({ id: t.events.id })
-    .from(t.events)
-    .where(eq(t.events.id, eventId))
-  if (existing)
-    return {
-      event_id: eventId,
-      duplicate: true,
-      runs: await runsOfEvent(db, eventId),
-    }
+  const existingRuns = async (eventId: string) => {
+    const [existing] = await db
+      .select({ id: t.events.id })
+      .from(t.events)
+      .where(eq(t.events.id, eventId))
+    return existing
+      ? {
+          event_id: eventId,
+          duplicate: true,
+          runs: await runsOfEvent(db, eventId),
+        }
+      : null
+  }
+  if (input.id) {
+    const dup = await existingRuns(input.id)
+    if (dup) return dup
+  }
 
   const snapshot = await getUnitSnapshot(db, input.unit_id)
   const partyId = input.party_id ?? snapshot.tenant?.contact_id
@@ -242,15 +251,28 @@ export async function triggerEvent(db: DB, input: TriggerInput) {
     throw unprocessable("party is not the tenant of this unit")
 
   const payloadDay = input.payload?.move_in_date
-  const targetDay =
-    typeof payloadDay === "string" && /^\d{4}-\d{2}-\d{2}$/.test(payloadDay)
-      ? payloadDay
-      : snapshot.tenant?.move_in
+  if (payloadDay !== undefined && !isCalendarDay(payloadDay))
+    throw unprocessable("move_in_date must be a real calendar day (YYYY-MM-DD)")
+  const targetDay = payloadDay ?? snapshot.tenant?.move_in
   if (!targetDay)
     throw unprocessable("no target date (move_in_date) for this event")
 
   const occurredAt = input.occurred_at ? new Date(input.occurred_at) : clock()
   const referenceDay = toDay(now())
+  // A move-in long past is not a moment any more: nobody needs a "move-in offer" then.
+  if (targetDay < addDays(referenceDay, -PAST_GRACE_DAYS))
+    throw unprocessable(
+      `move-in on ${targetDay} is more than ${PAST_GRACE_DAYS} days in the past`
+    )
+
+  // Without an explicit id the event is named by what happened (same as detectMoveIn),
+  // so a retried call without an id is still one event, not a second flow.
+  const eventId =
+    input.id ?? nameUuid(`${input.type}:${input.unit_id}:${targetDay}`)
+  if (!input.id) {
+    const dup = await existingRuns(eventId)
+    if (dup) return dup
+  }
 
   const partners = (await listPartners(db)).filter(
     (p) =>
@@ -761,6 +783,16 @@ export async function applyPartnerStatus(
         return { duplicate: false, ignored: true, state: run.state }
       }
 
+      if (update.activation_date) {
+        const today = toDay(now())
+        if (
+          update.activation_date < addDays(today, -PAST_GRACE_DAYS) ||
+          update.activation_date > addDays(today, 2 * 365)
+        )
+          throw unprocessable(
+            `activation_date ${update.activation_date} is not plausible (more than ${PAST_GRACE_DAYS} days ago or over two years ahead)`
+          )
+      }
       const startDate = update.activation_date ?? order.startDate
       // Write the result back onto the unit: the confirmed order *is* the service contract.
       const contractStatus = contractAfter(
