@@ -54,7 +54,7 @@ export function documentFormat(locale: Locale, m: DocumentMessages) {
     number: (n: number) => number.format(n),
     day: (d: string) => day.format(new Date(`${d}T12:00:00Z`)),
     dateTime: (d: Date) => dateTime.format(d),
-    /** "Lena Hoffmann and Jonas Weber". */
+    /** "Liam Sherwood and Jonas Weber". */
     list: (items: string[]) => list.format(items),
     floor,
     /** "Flat 4B, 2nd floor". */

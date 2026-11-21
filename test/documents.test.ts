@@ -67,7 +67,7 @@ describe("documents", () => {
       `lease:${LEASE_4B}`,
       `registration:${LEASE_4B}`,
       `rent_certificate:${LEASE_4B}`,
-      // Lena moves in on 1 Dec, after the pinned demo day: the handover is prepared.
+      // Liam moves in on 1 Dec, after the pinned demo day: the handover is prepared.
       `handover:${LEASE_4B}`,
       `energy:${BUILDING_12}`,
       // Maria Becker's rental management covers 4B; the WEG mandate the whole property.
@@ -75,7 +75,7 @@ describe("documents", () => {
       `management:${WEG_MANDATE}`,
     ])
     expect(links[0]).toMatchObject({
-      context: ["Lena Hoffmann"],
+      context: ["Liam Sherwood"],
       when: { day: "2026-12-01" },
     })
   })
@@ -84,7 +84,7 @@ describe("documents", () => {
     const text = render(await load("lease", LEASE_4B))
     for (const part of [
       "Landlord Maria Becker",
-      "Tenant Lena Hoffmann",
+      "Tenant Liam Sherwood",
       "Musterstraße 12, 52062 Aachen",
       "Flat 4B, 2nd floor",
       "approx. 68 m²",
@@ -92,7 +92,7 @@ describe("documents", () => {
       "begins on 1 December 2026",
       "net rent, excluding operating costs, is €780.00",
       "three monthly net rents (€2,340.00)",
-      "Tenant: Lena Hoffmann",
+      "Tenant: Liam Sherwood",
     ])
       expect(text).toContain(part)
   })
@@ -118,7 +118,7 @@ describe("documents", () => {
 
   it("words the rent certificate for upcoming and ended tenancies", async () => {
     const upcoming = render(await load("rent_certificate", LEASE_4B))
-    expect(upcoming).toContain("is let to Lena Hoffmann from 1 December 2026")
+    expect(upcoming).toContain("is let to Liam Sherwood from 1 December 2026")
 
     const seed = await readSeedFile()
     const ended = seed.leases.find(
@@ -211,7 +211,7 @@ describe("documents", () => {
 
     const record = await load("consent", consent.id)
     const text = render(record)
-    expect(text).toContain("Data subject Lena Hoffmann")
+    expect(text).toContain("Data subject Liam Sherwood")
     expect(text).toContain("Given via Tenant portal")
     expect(text).toContain("Status Active")
     expect(text).toContain("Flat Musterstraße 12, 52062 Aachen Flat 4B")
@@ -227,7 +227,7 @@ describe("documents", () => {
   it("returns nothing for unknown or inapplicable documents", async () => {
     expect(await loadDocument(db, "lease", "not-a-uuid")).toBeNull()
     expect(await loadDocument(db, "lease", newId())).toBeNull()
-    // Lena owns nothing, so she has no owner record sheet.
+    // Liam owns nothing, so they have no owner record sheet.
     expect(await loadDocument(db, "owner_sheet", LENA)).toBeNull()
     expect(await listUnitDocuments(db, newId())).toEqual([])
   })

@@ -26,7 +26,7 @@ No reltix API or dataset: we mock centrix ourselves. "Keep it realistic and tell
 | Partner choice reasoning | 10% |
 
 ## Decisions we made
-- **Use case: Move-in → Internet** (Jan opened his pitch with "Wi-Fi in a new flat"; the brief's example payloads are all for this case). Example: event 20 Nov, move-in 1 Dec, unit 4B, Musterstraße 12, 52062 Aachen, tenant Lena Hoffmann (c_202), owner Maria Becker (c_101).
+- **Use case: Move-in → Internet** (Jan opened his pitch with "Wi-Fi in a new flat"; the brief's example payloads are all for this case). Example: event 20 Nov, move-in 1 Dec, unit 4B, Musterstraße 12, 52062 Aachen, tenant Liam Sherwood (c_202), owner Maria Becker (c_101).
 - **Realism hook:** 20 Nov → 1 Dec is only 7 business days; fibre needs ~10. So we don't fake "live on day one": we order the real start date (4 Dec) and offer a free 5G router as a bridge. Most teams will miss this.
 - **Second partner via manifest only** (electricity, `stadtwerk_energy`) on the same move-in event = live proof of the connector spec ("one event, several outcomes").
 - **Channels:** ElevenLabs voice agent (outbound call via Twilio, also cross-track ElevenLabs prize) + tenant portal with one-click "Agree & order"; partner dashboard with signed webhooks; property-manager view with suggested next step and optional human approval.

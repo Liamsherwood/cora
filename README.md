@@ -234,7 +234,7 @@ Click path (after `npm run db:seed` and `npm run dev`; `/de/…` works too, the 
 1. **/en/services** (*Services* in the dashboard sidebar): unit 4B → *Fire event: tenant.move_in* (two workflows appear)
 2. *Call tenant (voice agent)* (simulated without ElevenLabs keys) or *Approve &
    send to portal*
-3. **Tenant portal (Lena)** → *Agree & order* (shows exactly what is shared)
+3. **Tenant portal (Liam)** → *Agree & order* (shows exactly what is shared)
 4. **/en/partner** → *Accept order* → *Mark as live* (signed webhooks)
 5. Back in **/en/services**: contract on the unit, timeline, cost per case
 

@@ -33,5 +33,5 @@ Keep the call under 2 minutes. Read the tool's `say` field back to the tenant.
 In the portal web widget there is no placed call, so the tool answers 403: the agent should then answer questions and ask the tenant to tap "Agree & order" (consent stays a deliberate click in the portal).
 
 ## Phone
-Import a Twilio number in ElevenLabs → Phone Numbers, copy its id into `ELEVENLABS_PHONE_NUMBER_ID`. On a Twilio trial only verified numbers can be called: verify your own phone and set `DEMO_TENANT_PHONE_OVERRIDE`. Without the override the call goes to the tenant's number from the seed; only the demo tenants Lena Hoffmann, Benedikt Theisen and Jürgen Zimmermann have real numbers (see `data/seed.json`).
+Import a Twilio number in ElevenLabs → Phone Numbers, copy its id into `ELEVENLABS_PHONE_NUMBER_ID`. On a Twilio trial only verified numbers can be called: verify your own phone and set `DEMO_TENANT_PHONE_OVERRIDE`. Without the override the call goes to the tenant's number from the seed; only the demo tenants Liam Sherwood, Benedikt Theisen and Jürgen Zimmermann have real numbers (see `data/seed.json`).
 The server tool URL must be public (deploy to Vercel, or use a tunnel) – ElevenLabs can't reach localhost.
