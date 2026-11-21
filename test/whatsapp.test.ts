@@ -59,7 +59,7 @@ describe("WhatsApp opener", () => {
       { channel: "whatsapp" }
     )
     expect(view.messages.at(-1)?.content).toBe(
-      "Hallo Liam, hier ist Cora, die digitale Assistentin von reltix. Für Ihren Einzug am 1. Dezember 2026 in Musterstraße 12, 52062 Aachen habe ich ein Internet-Angebot für Sie. Antworten Sie einfach auf diese Nachricht, dann erkläre ich Ihnen alles."
+      "Hallo Liam, hier ist Cora. Für Ihren Einzug am 1. Dezember 2026 in Musterstraße 12, 52062 Aachen habe ich ein Internet-Angebot für Sie. Antworten Sie einfach auf diese Nachricht, dann erkläre ich Ihnen alles."
     )
     const [audit] = await whatsappAudits(run.id)
     expect(audit?.costCents).toBeGreaterThan(0)

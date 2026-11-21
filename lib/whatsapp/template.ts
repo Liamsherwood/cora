@@ -8,14 +8,14 @@
  * parameters, and renderOpener() records the exact text in the workflow conversation.
  */
 
-export const DEFAULT_TEMPLATE_NAME = "cora_move_in_offer"
+export const DEFAULT_TEMPLATE_NAME = "cora_move_in"
 
 export type TemplateLanguage = "de" | "en"
 
 /** Body text per language. {{1}} first name · {{2}} move-in date · {{3}} address · {{4}} service. */
 export const OPENER_BODY: Record<TemplateLanguage, string> = {
-  de: "Hallo {{1}}, hier ist Cora, die digitale Assistentin von reltix. Für Ihren Einzug am {{2}} in {{3}} habe ich ein {{4}}-Angebot für Sie. Antworten Sie einfach auf diese Nachricht, dann erkläre ich Ihnen alles.",
-  en: "Hi {{1}}, this is Cora, the digital assistant from reltix. For your move-in on {{2}} at {{3}} I have an {{4}} offer for you. Just reply to this message and I'll walk you through it.",
+  de: "Hallo {{1}}, hier ist Cora. Für Ihren Einzug am {{2}} in {{3}} habe ich ein {{4}}-Angebot für Sie. Antworten Sie einfach auf diese Nachricht, dann erkläre ich Ihnen alles.",
+  en: "Hi {{1}}, this is Cora. For your move-in on {{2}} at {{3}} I have an {{4}} offer for you. Just reply to this message and I'll walk you through it.",
 }
 
 /** Example values Meta asks for when reviewing the template. */
